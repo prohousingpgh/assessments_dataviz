@@ -190,10 +190,9 @@ def write_manifest(
         mill = json.loads(MILLAGE_PATH.read_text(encoding="utf-8"))
         manifest["tax_millage_year"] = mill.get("tax_year")
         manifest["tax_assumptions"] = (
-            "2025 nominal millage; after reassessment, millage is adjusted per jurisdiction so total "
-            "tax revenue stays the same (revenue-neutral reassessment), including commercial property "
-            "values with commercial growth at 0% (low), +20% (estimated), or +40% (high). Homestead exclusion "
-            "($18,000) on county, municipality, and school taxable value when HOM."
+            "See /assumptions for full detail: revenue-neutral millage per taxing body; commercial "
+            "growth bands 0% / +20% / +40%; homestead $18,000 (county & municipality) and $43,750 "
+            "(Pittsburgh school), scaled after reassessment by county residential value ratio."
         )
     MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")

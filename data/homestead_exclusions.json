@@ -1,0 +1,1256 @@
+{
+  "tax_year": 2025,
+  "default_exclusion": 18000,
+  "county": {
+    "amount": 18000,
+    "confidence": "verified",
+    "source": "Allegheny County Act 50 homestead exclusion (county real estate tax)",
+    "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+    "notes": "County applies a $18,000 reduction in assessed value before county millage."
+  },
+  "municipalities": {
+    "Aleppo Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Aspinwall Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Avalon Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Baldwin Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Baldwin Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Bell Acres Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Bellevue Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Ben Avon Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Ben Avon Heights Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Bethel Park": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Blawnox Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Brackenridge Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Braddock Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Braddock Hills Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Bradford Woods Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Brentwood Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Bridgeville Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Carnegie Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Castle Shannon Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Chalfant Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Cheswick Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Churchill Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "City of Clairton": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "City of Duquesne": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "City of McKeesport": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "City of Pittsburgh": {
+      "amount": 15000,
+      "confidence": "verified",
+      "source": "City of Pittsburgh Act 50 homestead (owner-occupied primary residence)",
+      "source_url": "https://www.wesa.fm/politics-government/2025-12-23/pittsburgh-property-taxes-calculator",
+      "notes": "Pittsburgh city homestead is lower than the county default. Parks and library taxes use the same homestead base in city law; this app models city millage only."
+    },
+    "Collier Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Coraopolis Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Crafton Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Crescent Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Dormont Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Dravosburg Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "East Deer Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "East McKeesport Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "East Pittsburgh Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Edgewood Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Edgeworth Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Elizabeth Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Elizabeth Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Emsworth Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Etna Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Fawn Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Findlay Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Forest Hills Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Forward Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Fox Chapel Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Franklin Park Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Frazer Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Glassport Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Glen Osborne Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Glenfield Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Green Tree Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Hampton Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Harmar Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Harrison Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Haysville Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Heidelberg Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Homestead Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Indiana Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Ingram Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Jefferson Hills Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Kennedy Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Kilbuck Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Leet Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Leetsdale Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Liberty Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Lincoln Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Marshall Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "McCandless Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "McDonald Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "McKees Rocks Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Millvale Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Monroeville Municipality": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Moon Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Mount Lebanon": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Mount Oliver Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Munhall Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Neville Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "North Braddock Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "North Fayette Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "North Versailles Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "O'Hara Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Oakdale Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Oakmont Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Ohio Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Penn Hills Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Pennsbury Village": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Pine Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Pitcairn Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Pleasant Hills Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Plum Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Port Vue Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Rankin Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Reserve Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Richland Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Robinson Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Ross Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Rosslyn Farms Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Scott Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Sewickley Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Sewickley Heights Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Sewickley Hills Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Shaler Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Sharpsburg Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "South Fayette Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "South Park Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "South Versailles Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Springdale Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Springdale Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Stowe Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Swissvale Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Tarentum Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Thornburg Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Trafford Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Turtle Creek Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Upper St. Clair Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Verona Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Versailles Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Wall Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West Deer Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West Elizabeth Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West Homestead Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West Mifflin Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West View Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Whitaker Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "White Oak Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Whitehall Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Wilkins Township": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Wilkinsburg Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Wilmerding Borough": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed municipality default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    }
+  },
+  "school_districts": {
+    "Allegheny Valley": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Avonworth": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Baldwin-Whitehall": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Bethel Park": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Brentwood": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Carlynton": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Chartiers Valley": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Clairton": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Cornell": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Deer Lakes": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Duquesne Area": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "East Allegheny": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Elizabeth-Forward": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Fort Cherry": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Fox Chapel Area": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Gateway": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Hampton": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Highlands": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Keystone Oaks": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "McKeesport Area": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Montour": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Moon Area": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Mt. Lebanon": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "North Allegheny": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "North Hills": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Northgate": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Norwin": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Penn Hills": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Penn-Trafford": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Pine-Richland": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Pittsburgh": {
+      "amount": 43750,
+      "confidence": "verified",
+      "source": "Pittsburgh Public Schools Act 50 homestead exclusion",
+      "source_url": "https://www.wesa.fm/politics-government/2025-12-23/pittsburgh-property-taxes-calculator",
+      "notes": "Higher than the $18,000 default used by most Allegheny school districts."
+    },
+    "Plum": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Quaker Valley": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Riverview": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Shaler Area": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "South Allegheny": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "South Fayette": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "South Park": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Steel Valley": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Sto-Rox": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Upper St. Clair": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West Allegheny": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West Jefferson": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "West Mifflin Area": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Wilkinsburg": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    },
+    "Woodland Hills": {
+      "amount": 18000,
+      "confidence": "default",
+      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
+      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+    }
+  },
+  "metadata": {
+    "generated_by": "scripts/build_homestead_exclusions.py",
+    "millage_source": "data/millage_2025.json",
+    "municipality_count": 130,
+    "school_district_count": 46,
+    "verified_municipality_count": 1,
+    "verified_school_district_count": 1,
+    "disclaimer": "Reference table for Act 50 homestead exclusions on assessed value. Only taxing bodies that adopted an exclusion apply it; applications are filed with Allegheny County by March 1. Amounts marked default are placeholders until confirmed from district resolutions."
+  }
+}

@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.config import CORS_ORIGINS
 from api.db import get_connection, get_parcel, get_summary_stats, load_manifest, search_parcels
 from api.static_files import install_static_files
+from api.homestead_data import list_homestead_table
 from api.tax import compute_property_taxes, set_tax_db_connection
 from api.tax_aggregates import clear_aggregate_cache
 
@@ -60,6 +61,11 @@ def manifest() -> dict[str, Any]:
     data = load_manifest()
     data["county_summary"] = get_summary_stats(app.state.db)
     return data
+
+
+@app.get("/api/homestead-exemptions")
+def homestead_exemptions() -> dict[str, Any]:
+    return list_homestead_table()
 
 
 install_static_files(app)

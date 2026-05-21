@@ -6,13 +6,19 @@ export function applyParcelTaxAdjustments(
   taxes: PropertyTaxes,
   parcel: Parcel,
   homesteadEnabled: boolean,
-  incomeBelow125Ami: boolean
+  incomeBelow125Ami: boolean,
+  countyResidentialValueRatio?: number | null
 ): {
   displayTaxes: PropertyTaxes
   homestead: ReturnType<typeof applyHomesteadExemption>
   income: ReturnType<typeof applyIncomeProtection> | null
 } {
-  const homestead = applyHomesteadExemption(taxes, parcel, homesteadEnabled)
+  const homestead = applyHomesteadExemption(
+    taxes,
+    parcel,
+    homesteadEnabled,
+    countyResidentialValueRatio
+  )
   let working = homestead.taxes
 
   let income: ReturnType<typeof applyIncomeProtection> | null = null

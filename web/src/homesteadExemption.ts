@@ -1,6 +1,13 @@
 import type { Parcel, PropertyTaxes, TaxBreakdown, TaxLine, TaxScenarioBreakdown } from './types'
 
 export const HOMESTEAD_EXCLUSION = 18_000
+export const PITTSBURGH_SCHOOL_HOMESTEAD_EXCLUSION = 43_750
+
+export type HomesteadExclusions = {
+  county: { current: number; future: number }
+  municipality: { current: number; future: number }
+  school: { current: number; future: number }
+}
 
 export type HomesteadResult = {
   taxes: PropertyTaxes
@@ -17,10 +24,67 @@ function millTax(taxable: number, mills: number | null | undefined): number {
   return (taxable * mills) / 1000
 }
 
-function homesteadTaxable(assessed: number, applyHomestead: boolean): number {
+export function isPittsburghSchoolDistrict(schoolDistrict?: string | null): boolean {
+  return (schoolDistrict || '').trim().toUpperCase() === 'PITTSBURGH'
+}
+
+/** Post-reassessment homestead exclusion scaled by countywide residential value ratio. */
+export function futureHomesteadExclusion(
+  baseExclusion: number,
+  countyResidentialValueRatio?: number | null
+): number {
+  if (baseExclusion <= 0) return 0
+  if (
+    countyResidentialValueRatio == null ||
+    Number.isNaN(countyResidentialValueRatio) ||
+    countyResidentialValueRatio <= 0
+  ) {
+    return baseExclusion
+  }
+  const scaled = baseExclusion * countyResidentialValueRatio
+  return Math.round(scaled / 1000) * 1000
+}
+
+export function homesteadExclusionsFromTaxes(
+  taxes: PropertyTaxes
+): HomesteadExclusions | null {
+  const ex = taxes.homestead_exclusions
+  if (!ex) return null
+  return {
+    county: ex.county,
+    municipality: ex.municipality,
+    school: ex.school,
+  }
+}
+
+export function homesteadExclusionsForParcel(
+  parcel: Parcel,
+  countyResidentialValueRatio?: number | null
+): HomesteadExclusions {
+  const ratio = countyResidentialValueRatio ?? null
+  const schoolBase = isPittsburghSchoolDistrict(parcel.school_district)
+    ? PITTSBURGH_SCHOOL_HOMESTEAD_EXCLUSION
+    : HOMESTEAD_EXCLUSION
+  return {
+    county: {
+      current: HOMESTEAD_EXCLUSION,
+      future: futureHomesteadExclusion(HOMESTEAD_EXCLUSION, ratio),
+    },
+    municipality: {
+      current: HOMESTEAD_EXCLUSION,
+      future: futureHomesteadExclusion(HOMESTEAD_EXCLUSION, ratio),
+    },
+    school: {
+      current: schoolBase,
+      future: futureHomesteadExclusion(schoolBase, ratio),
+    },
+  }
+}
+
+function homesteadTaxable(assessed: number, applyHomestead: boolean, exclusion: number): number {
   const base = Math.max(0, assessed)
   if (!applyHomestead) return base
-  return Math.max(0, base - HOMESTEAD_EXCLUSION)
+  return Math.max(0, base - exclusion)
 }
 
 function scaleAssessed(base: number, newFmv: number, curFmv: number): number {
@@ -48,6 +112,7 @@ export function defaultHomesteadToggle(parcel: Parcel): boolean {
 function buildAdjustedBreakdown(
   parcel: Parcel,
   enabled: boolean,
+  exclusions: HomesteadExclusions,
   countyLineCur: TaxLine,
   countyLineFut: TaxLine,
   muniLineCur: TaxLine,
@@ -65,32 +130,32 @@ function buildAdjustedBreakdown(
 
   const countyCur = updateLine(
     countyLineCur,
-    homesteadTaxable(countyCurAssessed, enabled),
+    homesteadTaxable(countyCurAssessed, enabled, exclusions.county.current),
     countyLineCur.mills
   )
   const countyFut = updateLine(
     countyLineFut,
-    homesteadTaxable(countyFutAssessed, enabled),
+    homesteadTaxable(countyFutAssessed, enabled, exclusions.county.future),
     countyLineFut.mills
   )
   const muniCur = updateLine(
     muniLineCur,
-    homesteadTaxable(localCurAssessed, enabled),
+    homesteadTaxable(localCurAssessed, enabled, exclusions.municipality.current),
     muniLineCur.mills
   )
   const muniFut = updateLine(
     muniLineFut,
-    homesteadTaxable(localFutAssessed, enabled),
+    homesteadTaxable(localFutAssessed, enabled, exclusions.municipality.future),
     muniLineFut.mills
   )
   const schoolCur = updateLine(
     schoolLineCur,
-    homesteadTaxable(localCurAssessed, enabled),
+    homesteadTaxable(localCurAssessed, enabled, exclusions.school.current),
     schoolLineCur.mills
   )
   const schoolFut = updateLine(
     schoolLineFut,
-    homesteadTaxable(localFutAssessed, enabled),
+    homesteadTaxable(localFutAssessed, enabled, exclusions.school.future),
     schoolLineFut.mills
   )
 
@@ -125,6 +190,7 @@ function adjustScenario(
   scen: TaxScenarioBreakdown,
   parcel: Parcel,
   enabled: boolean,
+  exclusions: HomesteadExclusions,
   currentTotal: number
 ): TaxScenarioBreakdown {
   const curFmv = parcel.current_assessment_total ?? 0
@@ -134,17 +200,17 @@ function adjustScenario(
 
   const countyFut = updateLine(
     scen.county,
-    homesteadTaxable(countyFutAssessed, enabled),
+    homesteadTaxable(countyFutAssessed, enabled, exclusions.county.future),
     scen.county.mills
   )
   const muniFut = updateLine(
     scen.municipality,
-    homesteadTaxable(localFutAssessed, enabled),
+    homesteadTaxable(localFutAssessed, enabled, exclusions.municipality.future),
     scen.municipality.mills
   )
   const schoolFut = updateLine(
     scen.school,
-    homesteadTaxable(localFutAssessed, enabled),
+    homesteadTaxable(localFutAssessed, enabled, exclusions.school.future),
     scen.school.mills
   )
   const futureTotal =
@@ -168,11 +234,20 @@ function adjustScenario(
 export function applyHomesteadExemption(
   taxes: PropertyTaxes,
   parcel: Parcel,
-  enabled: boolean
+  enabled: boolean,
+  countyResidentialValueRatio?: number | null
 ): HomesteadResult {
+  const ratio =
+    countyResidentialValueRatio ??
+    taxes.county_residential_value_ratio ??
+    null
+  const exclusions =
+    homesteadExclusionsFromTaxes(taxes) ?? homesteadExclusionsForParcel(parcel, ratio)
+
   const baseline = buildAdjustedBreakdown(
     parcel,
     enabled,
+    exclusions,
     taxes.current.county,
     taxes.future.county,
     taxes.current.municipality,
@@ -185,7 +260,13 @@ export function applyHomesteadExemption(
   if (futureScenarios) {
     const updated: Record<string, TaxScenarioBreakdown> = {}
     for (const [id, scen] of Object.entries(futureScenarios)) {
-      updated[id] = adjustScenario(scen, parcel, enabled, baseline.current.total)
+      updated[id] = adjustScenario(
+        scen,
+        parcel,
+        enabled,
+        exclusions,
+        baseline.current.total
+      )
     }
     futureScenarios = updated
   }
@@ -196,7 +277,11 @@ export function applyHomesteadExemption(
   const adjusted: PropertyTaxes = {
     ...taxes,
     homestead_applied: enabled,
-    homestead_exclusion: enabled ? HOMESTEAD_EXCLUSION : 0,
+    homestead_exclusion: enabled ? exclusions.county.current : 0,
+    homestead_exclusion_future: enabled ? exclusions.county.future : 0,
+    homestead_exclusion_school: enabled ? exclusions.school.current : 0,
+    homestead_exclusion_school_future: enabled ? exclusions.school.future : 0,
+    county_residential_value_ratio: ratio ?? taxes.county_residential_value_ratio,
     current: baseline.current,
     future: defaultScen
       ? {

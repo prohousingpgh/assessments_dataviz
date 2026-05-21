@@ -10,6 +10,12 @@ from api.commercial_scenarios import (
     SCENARIO_LABELS,
     SCENARIO_SHORT_LABELS,
 )
+from api.db import get_summary_stats
+from api.homestead import (
+    DEFAULT_HOMESTEAD_EXCLUSION,
+    TaxingBody,
+    homestead_exclusion_amount,
+)
 from api.tax_aggregates import get_revenue_neutral_factor, load_tax_aggregates
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -116,7 +122,8 @@ def _compute_future_breakdown(
     scenario: str,
     aggregates: dict[str, Any],
     county_taxable_fut: float,
-    local_taxable_fut: float,
+    local_taxable_fut_muni: float,
+    local_taxable_fut_school: float,
     county_mills: float,
     muni_mills: float | None,
     school_mills: float | None,
@@ -142,8 +149,8 @@ def _compute_future_breakdown(
     school_mills_future = _effective_future_mills(school_mills, school_factor)
 
     county_fut = _mill_tax(county_taxable_fut, county_mills_future)
-    muni_fut = _mill_tax(local_taxable_fut, muni_mills_future)
-    school_fut = _mill_tax(local_taxable_fut, school_mills_future)
+    muni_fut = _mill_tax(local_taxable_fut_muni, muni_mills_future)
+    school_fut = _mill_tax(local_taxable_fut_school, school_mills_future)
     total = county_fut + muni_fut + school_fut
 
     return {
@@ -159,7 +166,7 @@ def _compute_future_breakdown(
         ),
         "municipality": _line(
             municipality_label,
-            local_taxable_fut,
+            local_taxable_fut_muni,
             muni_mills_future,
             muni_fut,
             muni_key,
@@ -169,7 +176,7 @@ def _compute_future_breakdown(
         ),
         "school": _line(
             school_label,
-            local_taxable_fut,
+            local_taxable_fut_school,
             school_mills_future,
             school_fut,
             school_key,
@@ -200,7 +207,14 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     local_future = _scale_assessed(local_current, fmv_future, fmv_current)
 
     homestead_flag = parcel.get("homestead_flag")
-    exclusion = float(cfg.get("homestead_exclusion", 0))
+    exclusion_current = float(cfg.get("homestead_exclusion", DEFAULT_HOMESTEAD_EXCLUSION))
+    county_value_ratio: float | None = None
+    if _db_connection is not None:
+        summary = get_summary_stats(_db_connection)
+        county_value_ratio = summary.get("county_value_ratio")
+        if county_value_ratio is not None:
+            county_value_ratio = float(county_value_ratio)
+    has_homestead = (homestead_flag or "").strip().upper() == "HOM"
 
     municipality = parcel.get("municipality")
     school_district = parcel.get("school_district")
@@ -222,14 +236,34 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     if school_mills is None:
         warnings.append(f"School district millage not found for “{school_district}”.")
 
-    county_taxable_cur = _homestead_taxable(county_current, homestead_flag, exclusion)
-    county_taxable_fut = _homestead_taxable(county_future, homestead_flag, exclusion)
-    local_taxable_cur = _homestead_taxable(local_current, homestead_flag, exclusion)
-    local_taxable_fut = _homestead_taxable(local_future, homestead_flag, exclusion)
+    def _exclusion(body: TaxingBody, *, after: bool) -> float:
+        return homestead_exclusion_amount(
+            body,
+            school_district=school_district,
+            school_mills_key=school_key,
+            municipality_mills_key=muni_key,
+            after_reassessment=after,
+            county_residential_value_ratio=county_value_ratio,
+            default_exclusion=exclusion_current,
+        )
+
+    county_excl_cur = _exclusion("county", after=False)
+    county_excl_fut = _exclusion("county", after=True) if has_homestead else county_excl_cur
+    muni_excl_cur = _exclusion("municipality", after=False)
+    muni_excl_fut = _exclusion("municipality", after=True) if has_homestead else muni_excl_cur
+    school_excl_cur = _exclusion("school", after=False)
+    school_excl_fut = _exclusion("school", after=True) if has_homestead else school_excl_cur
+
+    county_taxable_cur = _homestead_taxable(county_current, homestead_flag, county_excl_cur)
+    county_taxable_fut = _homestead_taxable(county_future, homestead_flag, county_excl_fut)
+    local_taxable_cur_muni = _homestead_taxable(local_current, homestead_flag, muni_excl_cur)
+    local_taxable_fut_muni = _homestead_taxable(local_future, homestead_flag, muni_excl_fut)
+    local_taxable_cur_school = _homestead_taxable(local_current, homestead_flag, school_excl_cur)
+    local_taxable_fut_school = _homestead_taxable(local_future, homestead_flag, school_excl_fut)
 
     county_cur = _mill_tax(county_taxable_cur, county_mills)
-    muni_cur = _mill_tax(local_taxable_cur, muni_mills)
-    school_cur = _mill_tax(local_taxable_cur, school_mills)
+    muni_cur = _mill_tax(local_taxable_cur_muni, muni_mills)
+    school_cur = _mill_tax(local_taxable_cur_school, school_mills)
     current_total = county_cur + muni_cur + school_cur
 
     municipality_label = municipality or "Municipality"
@@ -247,7 +281,8 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
             scenario=scenario,
             aggregates=aggregates,
             county_taxable_fut=county_taxable_fut,
-            local_taxable_fut=local_taxable_fut,
+            local_taxable_fut_muni=local_taxable_fut_muni,
+            local_taxable_fut_school=local_taxable_fut_school,
             county_mills=county_mills,
             muni_mills=muni_mills,
             school_mills=school_mills,
@@ -289,21 +324,35 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
         f"aggregate commercial growth, with a range from 0% (low) to +40% (high).",
         "Your tax can still change if your home’s assessed value rises or falls more than the jurisdiction average.",
         "County tax uses county assessed value; municipality and school use local assessed value.",
-        "Homestead (HOM): $18,000 exclusion from taxable value for county, municipality, and school when owner-occupied.",
+        "Homestead (HOM): per-jurisdiction Act 50 exclusions (see /homestead-exemptions); "
+        "after reassessment exclusions scale by countywide residential assessed-value growth (nearest $1,000).",
     ]
 
     return {
         "tax_year": cfg.get("tax_year"),
         "revenue_neutral_reassessment": True,
-        "homestead_applied": (homestead_flag or "").strip().upper() == "HOM",
-        "homestead_exclusion": exclusion if (homestead_flag or "").strip().upper() == "HOM" else 0,
+        "homestead_applied": has_homestead,
+        "homestead_exclusion": exclusion_current if has_homestead else 0,
+        "homestead_exclusion_future": _exclusion("county", after=True) if has_homestead else 0,
+        "homestead_exclusion_school": school_excl_cur if has_homestead else 0,
+        "homestead_exclusion_school_future": school_excl_fut if has_homestead else 0,
+        "homestead_exclusion_municipality": muni_excl_cur if has_homestead else 0,
+        "homestead_exclusion_municipality_future": muni_excl_fut if has_homestead else 0,
+        "homestead_exclusions": {
+            "county": {"current": county_excl_cur, "future": county_excl_fut},
+            "municipality": {"current": muni_excl_cur, "future": muni_excl_fut},
+            "school": {"current": school_excl_cur, "future": school_excl_fut},
+        },
+        "county_residential_value_ratio": county_value_ratio,
         "default_scenario": default_scenario,
         "current": {
             "county": _line("Allegheny County", county_taxable_cur, county_mills, county_cur, "Allegheny County"),
             "municipality": _line(
-                municipality_label, local_taxable_cur, muni_mills, muni_cur, muni_key
+                municipality_label, local_taxable_cur_muni, muni_mills, muni_cur, muni_key
             ),
-            "school": _line(school_label, local_taxable_cur, school_mills, school_cur, school_key),
+            "school": _line(
+                school_label, local_taxable_cur_school, school_mills, school_cur, school_key
+            ),
             "total": round(current_total, 2),
         },
         "future": {

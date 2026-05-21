@@ -24,3 +24,30 @@ export function getParcel(parcelId: string): Promise<{
 export function getManifest(): Promise<Manifest> {
   return fetchJson('/api/manifest')
 }
+
+export type HomesteadExemptionEntry = {
+  name: string
+  taxing_body: string
+  amount: number
+  confidence: 'verified' | 'default'
+  source: string
+  source_url?: string
+  notes?: string
+}
+
+export type HomesteadExemptionsTable = {
+  tax_year?: number
+  default_exclusion?: number
+  county?: HomesteadExemptionEntry & { amount: number }
+  municipalities: HomesteadExemptionEntry[]
+  school_districts: HomesteadExemptionEntry[]
+  metadata?: {
+    disclaimer?: string
+    verified_municipality_count?: number
+    verified_school_district_count?: number
+  }
+}
+
+export function getHomesteadExemptions(): Promise<HomesteadExemptionsTable> {
+  return fetchJson('/api/homestead-exemptions')
+}

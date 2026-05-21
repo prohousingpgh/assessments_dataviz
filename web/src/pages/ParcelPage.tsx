@@ -10,7 +10,11 @@ import {
   formatNumber,
   formatPct,
 } from '../format'
-import { defaultHomesteadToggle, HOMESTEAD_EXCLUSION } from '../homesteadExemption'
+import {
+  defaultHomesteadToggle,
+  homesteadExclusionsForParcel,
+  homesteadExclusionsFromTaxes,
+} from '../homesteadExemption'
 import { applyParcelTaxAdjustments } from '../taxAdjustments'
 import type { TaxScenarioBreakdown } from '../types'
 
@@ -50,8 +54,14 @@ export function ParcelPage() {
 
   const taxAdjustments = useMemo(() => {
     if (!taxes || !parcel) return null
-    return applyParcelTaxAdjustments(taxes, parcel, homesteadEnabled, incomeBelow125Ami)
-  }, [taxes, parcel, homesteadEnabled, incomeBelow125Ami])
+    return applyParcelTaxAdjustments(
+      taxes,
+      parcel,
+      homesteadEnabled,
+      incomeBelow125Ami,
+      summary?.county_value_ratio
+    )
+  }, [taxes, parcel, homesteadEnabled, incomeBelow125Ami, summary?.county_value_ratio])
 
   const displayTaxes = taxAdjustments?.displayTaxes ?? null
   const incomeProtection = taxAdjustments?.income ?? null
@@ -155,11 +165,11 @@ export function ParcelPage() {
             />
             <span>I claim the homestead exemption (owner-occupied)</span>
           </label>
-          <p className="tax-option-help">
-            Reduces taxable assessed value by {formatMoney(HOMESTEAD_EXCLUSION)} for{' '}
-            <strong>county, municipality, and school district</strong> taxes, today and after
-            reassessment (county uses county assessed value; city and school use local assessed value).
-          </p>
+          <HomesteadHelpText
+            parcel={parcel}
+            taxes={taxes}
+            countyValueRatio={summary?.county_value_ratio}
+          />
 
           <label className="tax-option-toggle">
             <input
@@ -311,6 +321,44 @@ export function ParcelPage() {
         <Link to="/assumptions">How we estimate</Link>
       </p>
     </div>
+  )
+}
+
+function HomesteadHelpText({
+  parcel,
+  taxes,
+  countyValueRatio,
+}: {
+  parcel: Parcel
+  taxes: PropertyTaxes | null
+  countyValueRatio?: number | null
+}) {
+  const ex =
+    (taxes && homesteadExclusionsFromTaxes(taxes)) ??
+    homesteadExclusionsForParcel(parcel, countyValueRatio)
+  const muniDiffers = ex.municipality.current !== ex.county.current
+  const scaleNote =
+    countyValueRatio != null && countyValueRatio > 0 ? (
+      <>
+        {' '}
+        (after reassessment scaled by ≈{countyValueRatio.toFixed(2)}× countywide residential value,
+        nearest $1,000)
+      </>
+    ) : (
+      <> (after reassessment scaled with countywide residential value growth)</>
+    )
+
+  return (
+    <p className="tax-option-help">
+      Reduces taxable assessed value. <strong>County</strong>: {formatMoney(ex.county.current)} today,{' '}
+      {formatMoney(ex.county.future)} after reassessment{scaleNote}. <strong>Municipality</strong>:{' '}
+      {formatMoney(ex.municipality.current)} today, {formatMoney(ex.municipality.future)} after
+      reassessment{scaleNote}. <strong>School district</strong>: {formatMoney(ex.school.current)} today,{' '}
+      {formatMoney(ex.school.future)} after reassessment{scaleNote}.{' '}
+      {muniDiffers && 'Municipality amount differs from county. '}
+      <Link to="/homestead-exemptions">Full reference table</Link>. County uses county assessed value;
+      city and school use local assessed value.
+    </p>
   )
 }
 

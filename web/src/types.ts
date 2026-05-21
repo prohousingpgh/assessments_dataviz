@@ -62,11 +62,29 @@ export type TaxScenarioBreakdown = {
   jurisdiction_factors?: Record<string, number>
 }
 
+export type HomesteadBodyExclusions = {
+  current: number
+  future: number
+}
+
+export type HomesteadExclusionsByBody = {
+  county: HomesteadBodyExclusions
+  municipality: HomesteadBodyExclusions
+  school: HomesteadBodyExclusions
+}
+
 export type PropertyTaxes = {
   tax_year?: number
   revenue_neutral_reassessment?: boolean
   homestead_applied?: boolean
   homestead_exclusion?: number
+  homestead_exclusion_future?: number
+  homestead_exclusion_school?: number
+  homestead_exclusion_school_future?: number
+  homestead_exclusion_municipality?: number
+  homestead_exclusion_municipality_future?: number
+  homestead_exclusions?: HomesteadExclusionsByBody
+  county_residential_value_ratio?: number | null
   default_scenario?: string
   current: TaxBreakdown
   future: TaxBreakdown
@@ -78,6 +96,7 @@ export type PropertyTaxes = {
 
 export type Manifest = {
   scenario_label?: string
+  parcel_count?: number
   data_as_of?: string
   disclaimer?: string
   methodology_url?: string

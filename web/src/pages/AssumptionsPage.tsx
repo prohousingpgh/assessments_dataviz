@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getManifest } from '../api'
 import type { Manifest } from '../types'
-import { formatPct } from '../format'
+import { formatMoney, formatPct } from '../format'
+import {
+  futureHomesteadExclusion,
+  HOMESTEAD_EXCLUSION,
+  PITTSBURGH_SCHOOL_HOMESTEAD_EXCLUSION,
+} from '../homesteadExemption'
 
 export function AssumptionsPage() {
   const [manifest, setManifest] = useState<Manifest | null>(null)
@@ -18,33 +24,44 @@ export function AssumptionsPage() {
 
   const ratio = manifest.county_residential_value_ratio ?? manifest.county_summary?.county_value_ratio
   const avgPct = manifest.county_summary?.avg_value_change_pct
+  const parcelCount = manifest.county_summary?.parcel_count ?? manifest.parcel_count
+
+  const homesteadFutureCounty =
+    ratio != null ? futureHomesteadExclusion(HOMESTEAD_EXCLUSION, ratio) : null
+  const homesteadFuturePittsburghSchool =
+    ratio != null
+      ? futureHomesteadExclusion(PITTSBURGH_SCHOOL_HOMESTEAD_EXCLUSION, ratio)
+      : null
 
   return (
     <div className="page">
       <h1>How we estimate</h1>
       <p className="lead">
-        Transparent assumptions behind the numbers on this site. Full pipeline:{' '}
+        This page documents the assumptions behind assessed values and property tax estimates on
+        this site. For the full modeling pipeline, see{' '}
         <a href={manifest.methodology_url} target="_blank" rel="noreferrer">
           prohousingpgh/agc_assessments
         </a>
+        .
       </p>
 
       <div className="compare-grid">
         <section className="card">
           <h2>What we model</h2>
           <p>
-            Market-value-style assessments using OpenAvmKit: regression, spatial comparables, and
-            gradient-boosted models combined into one prediction per home, split by property type
-            (single-family, multi-family, commercial in the underlying pipeline; this site shows
-            homeowner parcels only).
+            Market-value-style assessments for <strong>owner-occupied residential parcels</strong>{' '}
+            using OpenAvmKit (regression, spatial comparables, and gradient-boosted models). We then
+            apply 2025 nominal millage and illustrative post-reassessment rules to estimate annual
+            property taxes.
           </p>
           <p className="detail-foot">Valuation date: {manifest.valuation_date ?? '2025-01-01'}</p>
         </section>
         <section className="card">
           <h2>What we do not claim</h2>
           <p>
-            This is not the county&apos;s official reassessment. Your actual change may differ after
-            appeals, homestead status, abatements, and elected officials&apos; millage decisions.
+            This is not the county&apos;s official reassessment, tax bill, or legal advice. Actual
+            results can differ after appeals, abatements, special programs, legislative changes, and
+            elected officials&apos; millage decisions.
           </p>
         </section>
       </div>
@@ -52,58 +69,219 @@ export function AssumptionsPage() {
       <section className="card">
         <h2>Data sources</h2>
         <ul className="bullet-list">
-          <li>Current assessments — WPRDC property assessments</li>
-          <li>Modeled future values — OpenAvmKit run via agc_assessments</li>
           <li>
-            Property tax millage —{' '}
+            <strong>Current assessments</strong> — WPRDC property assessments (parcel IDs, addresses,
+            county/local assessed values, homestead flags).
+          </li>
+          <li>
+            <strong>Modeled residential future values</strong> — OpenAvmKit output from the
+            agc_assessments project.
+          </li>
+          <li>
+            <strong>Commercial property (current only)</strong> — existing commercial assessed values
+            by municipality and school district, used only for jurisdiction-wide revenue-neutral
+            millage math (not shown as individual parcel lookups).
+          </li>
+          <li>
+            <strong>2025 millage</strong> —{' '}
             <a
               href="https://apps.alleghenycounty.us/website/MillMuni.asp?Year=2025"
               target="_blank"
               rel="noreferrer"
             >
-              Allegheny County Treasurer (2025)
-            </a>
+              Allegheny County Treasurer
+            </a>{' '}
+            (county, municipality, and school district rates).
           </li>
-          <li>Parcel boundaries — Allegheny County GIS (for future map views)</li>
         </ul>
         {manifest.data_as_of && <p className="detail-foot">Data as of {manifest.data_as_of}</p>}
+        {parcelCount != null && (
+          <p className="detail-foot">
+            About {parcelCount.toLocaleString()} homeowner parcels in this database.
+          </p>
+        )}
       </section>
 
       <section className="card">
-        <h2>Property tax estimates</h2>
+        <h2>How we estimate your home&apos;s assessed value</h2>
+        <p>
+          For each residential parcel, we compare WPRDC&apos;s current total assessment to a modeled
+          &quot;future&quot; total from OpenAvmKit. Dollar and percent changes on the parcel page
+          come directly from those two totals.
+        </p>
         <ul className="bullet-list">
           <li>
-            Annual tax = taxable assessed value × millage ÷ 1,000, for county, municipality, and school
-            district separately.
-          </li>
-          <li>County tax uses county assessed value (WPRDC COUNTYTOTAL); city and school use local assessed value (LOCALTOTAL).</li>
-          <li>
-            If a homestead flag (HOM) is on the parcel, a $18,000 homestead exclusion is subtracted from taxable value for county, municipality, and school taxes.
+            We do not blend in commercial properties when showing a single home&apos;s value change.
           </li>
           <li>
-            After reassessment, each taxing body (county, municipality, and school district separately) adjusts
-            its millage so total tax receipts for that body stay the same: aggregate pre-reassessment receipts
-            equal aggregate post-reassessment receipts, using sums of taxable value × millage for all parcels in
-            that body. Existing commercial property values are included in those totals.
-          </li>
-          <li>
-            Commercial reassessment is not modeled. Revenue-neutral millage uses +20% commercial growth as
-            the estimate, with a range from 0% (low bound) to +40% (high bound) from current commercial
-            assessed values.
-          </li>
-          <li>
-            Your home&apos;s tax can still rise or fall if its assessed value changes more or less than the jurisdiction average.
+            Countywide averages on this page and on parcel pages are summaries across all homeowner
+            parcels in the dataset, not a forecast from any one municipality.
           </li>
         </ul>
-        {manifest.tax_assumptions && <p className="detail-foot">{manifest.tax_assumptions}</p>}
+      </section>
+
+      <section className="card assumptions-card">
+        <h2>How we estimate property taxes</h2>
+        <p>
+          Taxes are computed separately for <strong>Allegheny County</strong>, your{' '}
+          <strong>municipality</strong>, and your <strong>school district</strong>, then summed.
+        </p>
+
+        <h3 className="assumptions-subhead">Basic formula</h3>
+        <ul className="bullet-list">
+          <li>
+            <strong>Annual tax</strong> = taxable assessed value × millage ÷ 1,000 (for each taxing
+            body).
+          </li>
+          <li>
+            <strong>County tax</strong> uses county assessed value (WPRDC <code>COUNTYTOTAL</code>).
+          </li>
+          <li>
+            <strong>Municipality and school taxes</strong> use local assessed value (WPRDC{' '}
+            <code>LOCALTOTAL</code>).
+          </li>
+          <li>
+            <strong>Today</strong> uses 2025 nominal millage from the Treasurer.{' '}
+            <strong>After reassessment</strong> uses adjusted (effective) millage from the
+            revenue-neutral rules below.
+          </li>
+        </ul>
+
+        <h3 className="assumptions-subhead">Revenue-neutral millage (per taxing body)</h3>
+        <p>
+          Pennsylvania often discusses &quot;revenue-neutral&quot; reassessment: each taxing body
+          adjusts its millage so <strong>total tax receipts for that body stay the same</strong>{' '}
+          countywide, even though individual bills change.
+        </p>
+        <ul className="bullet-list">
+          <li>
+            We compute this <strong>separately</strong> for the county, each municipality, and each
+            school district — not one blended rate for all three.
+          </li>
+          <li>
+            For each body and scenario, we sum <strong>current</strong> taxable value (residential in
+            our database + existing commercial assessments) and <strong>future</strong> taxable value
+            (modeled residential + commercial under the commercial growth assumption).
+          </li>
+          <li>
+            Adjustment factor = (current taxable sum) ÷ (future taxable sum). Post-reassessment
+            effective millage = 2025 nominal millage × that factor.
+          </li>
+          <li>
+            Your home&apos;s tax can still rise or fall if its assessed value changes more or less
+            than the average in that jurisdiction.
+          </li>
+        </ul>
+
+        <h3 className="assumptions-subhead">Commercial property (not modeled per parcel)</h3>
+        <p>
+          We do not have parcel-level commercial reassessment estimates. Instead, commercial enters
+          only through <strong>jurisdiction totals</strong> when calculating revenue-neutral millage:
+        </p>
+        <ul className="bullet-list">
+          <li>
+            <strong>Today:</strong> commercial stays at current assessed values from county data.
+          </li>
+          <li>
+            <strong>After reassessment:</strong> residential future values come from OpenAvmKit;
+            commercial values change only by a fixed countywide growth band applied to existing
+            commercial assessments.
+          </li>
+          <li>
+            <strong>Estimated case (+20% commercial growth):</strong> shown as the main
+            post-reassessment tax column.
+          </li>
+          <li>
+            <strong>Range (0% and +40% commercial growth):</strong> shown as lower and upper bounds
+            on the parcel page when multiple scenarios are available.
+          </li>
+        </ul>
+        <p className="detail-foot">
+          Residential growth in the model can differ from these commercial bands; only the commercial
+          portion of each jurisdiction&apos;s tax base uses the 0% / 20% / 40% assumptions.
+        </p>
+
+        <h3 className="assumptions-subhead">Homestead exemption</h3>
+        <p>
+          Homestead reduces <strong>taxable</strong> assessed value (not the assessment on your deed).
+          Amounts differ by taxing body and by whether we are estimating taxes today or after
+          reassessment. See the full{' '}
+          <Link to="/homestead-exemptions">homestead exclusion reference table</Link> for every
+          municipality and school district.
+        </p>
+        <ul className="bullet-list">
+          <li>
+            <strong>County (today):</strong> {formatMoney(HOMESTEAD_EXCLUSION)} subtracted from
+            taxable value when homestead applies.
+          </li>
+          <li>
+            <strong>Municipality and school (today):</strong> per-jurisdiction amounts (default{' '}
+            {formatMoney(HOMESTEAD_EXCLUSION)}; Pittsburgh city {formatMoney(15_000)}; Pittsburgh
+            school {formatMoney(PITTSBURGH_SCHOOL_HOMESTEAD_EXCLUSION)}).
+          </li>
+          <li>
+            <strong>After reassessment:</strong> we assume each exclusion grows with{' '}
+            <strong>countywide residential assessed-value growth</strong> in this dataset:
+            <br />
+            (total modeled residential assessed value) ÷ (total current residential assessed value).
+            The result is rounded to the <strong>nearest $1,000</strong>.
+          </li>
+          <li>
+            Formula: future exclusion = round<sub>$1,000</sub>(today&apos;s exclusion × county ratio).
+          </li>
+          <li>
+            Parcels with a homestead flag (<code>HOM</code>) in county data start with homestead
+            applied on the parcel page. Anyone can also turn homestead on or off with the checkbox to
+            see the effect.
+          </li>
+        </ul>
+        {ratio != null && homesteadFutureCounty != null && homesteadFuturePittsburghSchool != null && (
+          <p className="assumptions-example">
+            <strong>Example with this dataset&apos;s county ratio ({ratio.toFixed(2)}×):</strong>{' '}
+            county and municipality exclusions go from {formatMoney(HOMESTEAD_EXCLUSION)} to{' '}
+            {formatMoney(homesteadFutureCounty)}; Pittsburgh school goes from{' '}
+            {formatMoney(PITTSBURGH_SCHOOL_HOMESTEAD_EXCLUSION)} to{' '}
+            {formatMoney(homesteadFuturePittsburghSchool)}.
+          </p>
+        )}
+
+        <h3 className="assumptions-subhead">Optional adjustments on the parcel page</h3>
+        <p>
+          These are applied in your browser on top of API results — they do not change county records.
+        </p>
+        <ul className="bullet-list">
+          <li>
+            <strong>Homestead checkbox</strong> — Recalculates county, municipality, and school taxes
+            using the rules above (including Pittsburgh school&apos;s higher exclusion when applicable).
+          </li>
+          <li>
+            <strong>Income below 125% AMI (illustrative)</strong> — Models a proposed protection
+            where <strong>county tax only</strong> after reassessment would not exceed 150% of
+            today&apos;s county tax (a 50% increase cap). Municipality and school taxes are not
+            capped. This is for exploration only, not current law on your bill.
+          </li>
+        </ul>
+
+        <h3 className="assumptions-subhead">What is not in these tax estimates</h3>
+        <ul className="bullet-list">
+          <li>Payment plans, discounts, penalties, or delinquency</li>
+          <li>Act 77 or other special tax relief programs beyond the illustrative income toggle</li>
+          <li>Property tax abatements (e.g. LERTA, TIF) or appeal outcomes</li>
+          <li>Changes to statutory millage after 2025</li>
+        </ul>
       </section>
 
       {(ratio != null || avgPct != null) && (
         <section className="card">
           <h2>Countywide context (this dataset)</h2>
+          <p>
+            These countywide figures drive the post-reassessment homestead scaling described above and
+            provide context for any single home.
+          </p>
           {ratio != null && (
             <p>
-              Total residential assessed value (new ÷ current): <strong>{ratio.toFixed(2)}×</strong>
+              Total residential assessed value (modeled future ÷ current):{' '}
+              <strong>{ratio.toFixed(2)}×</strong>
             </p>
           )}
           {avgPct != null && (
@@ -111,6 +289,10 @@ export function AssumptionsPage() {
               Average percent change across homeowner parcels: <strong>{formatPct(avgPct)}</strong>
             </p>
           )}
+          <p className="detail-foot">
+            Averages can differ from the total-value ratio because individual homes move by different
+            percentages.
+          </p>
         </section>
       )}
 
