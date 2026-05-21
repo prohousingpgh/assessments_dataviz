@@ -3,8 +3,8 @@ import { SearchBox } from '../components/SearchBox'
 export function HomePage() {
   return (
     <div className="page">
-      <section className="hero-block">
-        <h1>What could reassessment mean for your home?</h1>
+      <section className="home-hero" aria-labelledby="home-hero-title">
+        <h1 id="home-hero-title">What could reassessment mean for your home?</h1>
         <p className="lead">
           Enter your Allegheny County address to compare today&apos;s assessed value with modeled
           values if the county reassesses residential properties.

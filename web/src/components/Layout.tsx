@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import logo from '../assets/logo_white.webp'
 
 const nav = [
   { to: '/', label: 'Look up your home' },
@@ -12,8 +13,15 @@ export function Layout() {
     <div className="app-shell">
       <header className="site-header">
         <div className="site-header-inner">
-          <Link to="/" className="site-title">
-            Allegheny Home Assessment Explorer
+          <Link to="/" className="site-brand">
+            <img
+              src={logo}
+              alt="Pro-Housing Pittsburgh"
+              className="site-logo"
+              width={160}
+              height={40}
+            />
+            <span className="site-title">Home Assessment Explorer</span>
           </Link>
           <nav className="site-nav" aria-label="Main">
             {nav.map((item) => (
@@ -27,13 +35,21 @@ export function Layout() {
             ))}
           </nav>
         </div>
-        <p className="site-tagline">Pro-Housing Pittsburgh · Illustrative reassessment estimates for homeowners</p>
+        <p className="site-tagline">
+          Illustrative reassessment estimates for Allegheny County homeowners
+        </p>
       </header>
       <main className="main-content">
         <Outlet />
       </main>
       <footer className="site-footer">
-        <p>
+        <p className="footer-org">
+          A project of{' '}
+          <a href="https://www.prohousingpgh.org/" target="_blank" rel="noreferrer">
+            Pro-Housing Pittsburgh
+          </a>
+        </p>
+        <p className="footer-disclaimer">
           Not legal or tax advice. Estimates from the{' '}
           <a href="https://github.com/prohousingpgh/agc_assessments" target="_blank" rel="noreferrer">
             agc_assessments

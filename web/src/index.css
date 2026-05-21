@@ -1,15 +1,22 @@
 :root {
-  --bg: #f6f5f2;
+  /* prohousingpgh.org Squarespace accent: hsl(218, 37%, 23%) */
+  --brand-h: 218;
+  --brand-s: 37%;
+  --brand-l: 23%;
+  --brand: hsl(var(--brand-h), var(--brand-s), var(--brand-l));
+  --brand-dark: hsl(var(--brand-h), var(--brand-s), 17%);
+  --brand-mid: hsl(var(--brand-h), var(--brand-s), 30%);
+  --bg: #f5f7fa;
   --surface: #ffffff;
-  --text: #1a1a1a;
-  --text-muted: #5c5c5c;
-  --border: #ddd9d2;
-  --accent: #2e5f8a;
-  --accent-soft: #e8f0f7;
+  --text: #1a1f26;
+  --text-muted: #5a6472;
+  --border: #d4dce6;
+  --accent: var(--brand);
+  --accent-soft: hsl(var(--brand-h), 42%, 95%);
   --warning-bg: #faf3e6;
   --warning-border: #e8d4a8;
-  --info-bg: #eef6fc;
-  --info-border: #b8d4ea;
+  --info-bg: hsl(var(--brand-h), 45%, 96%);
+  --info-border: hsl(var(--brand-h), 30%, 82%);
   --radius: 8px;
   --max-width: 920px;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -38,9 +45,10 @@ a {
 }
 
 .site-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 1rem 1.25rem 0.75rem;
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.25rem 0.85rem;
+  color: #fff;
 }
 
 .site-header-inner {
@@ -49,41 +57,68 @@ a {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.site-brand:hover .site-title {
+  color: #fff;
+}
+
+.site-logo {
+  display: block;
+  height: 36px;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .site-title {
   font-weight: 600;
   font-size: 1.05rem;
-  color: var(--text);
-  text-decoration: none;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.95);
+  transition: color 0.15s;
 }
 
 .site-nav {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
 }
 
 .nav-link {
-  padding: 0.35rem 0.75rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 6px;
   text-decoration: none;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .nav-link.active,
 .nav-link:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
 .site-tagline {
   max-width: var(--max-width);
-  margin: 0.35rem auto 0;
+  margin: 0.5rem auto 0;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.site-header a.nav-link {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .main-content {
@@ -96,10 +131,39 @@ a {
 
 .site-footer {
   border-top: 1px solid var(--border);
-  padding: 1rem 1.25rem;
-  font-size: 0.8rem;
+  padding: 1.25rem 1.25rem 1.5rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
   text-align: center;
+}
+
+.footer-org {
+  margin: 0 0 0.35rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.footer-disclaimer {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.home-hero {
+  margin-bottom: 1.5rem;
+  padding: 1.35rem 1.5rem;
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 55%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 720px) {
+  .site-title {
+    font-size: 0.95rem;
+  }
+
+  .site-logo {
+    height: 32px;
+  }
 }
 
 .page h1 {
@@ -116,6 +180,10 @@ a {
 
 .hero-block {
   margin-bottom: 1.25rem;
+}
+
+.home-hero .lead {
+  margin-bottom: 0;
 }
 
 .card {
