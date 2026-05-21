@@ -16,6 +16,9 @@ export type Parcel = SearchResult & {
   new_assessment_land: number | null
   value_change_dollars: number | null
   address_search?: string
+  county_total?: number | null
+  local_total?: number | null
+  homestead_flag?: string | null
 }
 
 export type CountySummary = {
@@ -41,14 +44,34 @@ export type TaxBreakdown = {
   total: number
 }
 
+export type TaxDelta = {
+  total_dollars: number
+  total_percent: number | null
+}
+
+export type TaxScenarioBreakdown = {
+  id: string
+  label: string
+  short_label: string
+  commercial_growth_rate?: number
+  county: TaxLine
+  municipality: TaxLine
+  school: TaxLine
+  total: number
+  delta: TaxDelta
+  jurisdiction_factors?: Record<string, number>
+}
+
 export type PropertyTaxes = {
   tax_year?: number
   revenue_neutral_reassessment?: boolean
   homestead_applied?: boolean
   homestead_exclusion?: number
+  default_scenario?: string
   current: TaxBreakdown
   future: TaxBreakdown
-  delta: { total_dollars: number; total_percent: number | null }
+  delta: TaxDelta
+  future_scenarios?: Record<string, TaxScenarioBreakdown>
   warnings?: string[]
   notes?: string[]
 }

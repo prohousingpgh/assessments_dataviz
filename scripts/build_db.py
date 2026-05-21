@@ -17,14 +17,22 @@ import re
 import sqlite3
 import sys
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
+from api.commercial_scenarios import (  # noqa: E402
+    build_scenario_tax_aggregates,
+    load_commercial_valuations,
+    revenue_neutral_factor,
+)
 from homeowner_uses import is_homeowner_use  # noqa: E402
 
 DEFAULT_DB = ROOT / "data" / "parcels.db"
+DEFAULT_COMMERCIAL = ROOT / "data" / "commercial_existing_valuations.csv"
 MANIFEST_PATH = ROOT / "data" / "manifest.json"
 MILLAGE_PATH = ROOT / "data" / "millage_2025.json"
 AGGREGATES_PATH = ROOT / "data" / "tax_aggregates.json"
@@ -183,23 +191,25 @@ def write_manifest(
         manifest["tax_millage_year"] = mill.get("tax_year")
         manifest["tax_assumptions"] = (
             "2025 nominal millage; after reassessment, millage is adjusted per jurisdiction so total "
-            "tax revenue stays the same (revenue-neutral reassessment). Homestead exclusion on county tax when HOM."
+            "tax revenue stays the same (revenue-neutral reassessment), including commercial property "
+            "values with commercial growth at 0% (low), +20% (estimated), or +40% (high). Homestead exclusion "
+            "($18,000) on county, municipality, and school taxable value when HOM."
         )
     MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _county_taxable_series(
-    county_assessed: pd.Series, homestead: pd.Series, exclusion: float
+def _homestead_taxable_series(
+    assessed: pd.Series, homestead: pd.Series, exclusion: float
 ) -> pd.Series:
-    taxable = county_assessed.fillna(0).astype(float).copy()
+    taxable = assessed.fillna(0).astype(float).copy()
     hom = homestead.fillna("").astype(str).str.strip().str.upper() == "HOM"
     taxable.loc[hom] = (taxable.loc[hom] - exclusion).clip(lower=0)
     return taxable
 
 
-def build_tax_aggregates(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
-    """Per-jurisdiction sums for revenue-neutral millage after reassessment."""
+def _prepare_residential_taxable(df: pd.DataFrame) -> pd.DataFrame:
+    """Residential parcel taxable columns for aggregate millage (homestead on file)."""
     work = df.copy()
     fmv_cur = work["current_assessment_total"].astype(float)
     fmv_new = work["new_assessment_total"].astype(float)
@@ -209,14 +219,49 @@ def build_tax_aggregates(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict
     work["local_future"] = work["local_current"] * ratio
     work["county_current"] = work["county_total"].astype(float).fillna(fmv_cur)
     work["county_future"] = work["county_current"] * ratio
-    homestead_col = work["homestead_flag"] if "homestead_flag" in work.columns else pd.Series([""] * len(work))
-    work["county_taxable_current"] = _county_taxable_series(
+    homestead_col = (
+        work["homestead_flag"] if "homestead_flag" in work.columns else pd.Series([""] * len(work))
+    )
+    work["county_taxable_current"] = _homestead_taxable_series(
         work["county_current"], homestead_col, HOMESTEAD_EXCLUSION
     )
-    work["county_taxable_future"] = _county_taxable_series(
+    work["county_taxable_future"] = _homestead_taxable_series(
         work["county_future"], homestead_col, HOMESTEAD_EXCLUSION
     )
+    work["local_taxable_current"] = _homestead_taxable_series(
+        work["local_current"], homestead_col, HOMESTEAD_EXCLUSION
+    )
+    work["local_taxable_future"] = _homestead_taxable_series(
+        work["local_future"], homestead_col, HOMESTEAD_EXCLUSION
+    )
+    return work
 
+
+def build_tax_aggregates(
+    df: pd.DataFrame, commercial_path: Path | None = None
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Per-jurisdiction revenue-neutral factors; optional commercial valuation scenarios."""
+    residential = _prepare_residential_taxable(df)
+
+    if commercial_path and commercial_path.exists():
+        commercial = load_commercial_valuations(commercial_path)
+        tax_agg_df, scenario_factors = build_scenario_tax_aggregates(residential, commercial)
+        baseline = scenario_factors["baseline"]
+        json_payload: dict[str, Any] = {
+            "default_scenario": "baseline",
+            "scenarios": scenario_factors,
+            "county": baseline["county"],
+            "municipality": baseline["municipality"],
+            "school_district": baseline["school_district"],
+            "commercial_summary": {
+                "parcel_count": int(len(commercial)),
+                "current_assessment_total": float(commercial["current_assessment_total"].sum()),
+                "source_file": commercial_path.name,
+            },
+        }
+        return tax_agg_df, json_payload
+
+    # Residential-only fallback (no commercial file)
     rows: list[dict[str, object]] = []
     json_factors: dict[str, dict[str, float]] = {
         "county": {},
@@ -225,7 +270,7 @@ def build_tax_aggregates(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict
     }
 
     def add_group(jtype: str, name_col: str, cur_col: str, fut_col: str) -> None:
-        grouped = work.groupby(name_col, dropna=False).agg(
+        grouped = residential.groupby(name_col, dropna=False).agg(
             current_sum=(cur_col, "sum"),
             future_sum=(fut_col, "sum"),
         )
@@ -234,9 +279,10 @@ def build_tax_aggregates(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict
                 continue
             cur = float(row["current_sum"] or 0)
             fut = float(row["future_sum"] or 0)
-            factor = (cur / fut) if fut > 0 else 1.0
+            factor = revenue_neutral_factor(cur, fut)
             rows.append(
                 {
+                    "scenario": "baseline",
                     "jurisdiction_type": jtype,
                     "jurisdiction_name": str(name).strip(),
                     "current_taxable_sum": cur,
@@ -246,11 +292,12 @@ def build_tax_aggregates(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict
             )
             json_factors[jtype][str(name).strip()] = factor
 
-    county_cur = float(work["county_taxable_current"].sum())
-    county_fut = float(work["county_taxable_future"].sum())
-    county_factor = (county_cur / county_fut) if county_fut > 0 else 1.0
+    county_cur = float(residential["county_taxable_current"].sum())
+    county_fut = float(residential["county_taxable_future"].sum())
+    county_factor = revenue_neutral_factor(county_cur, county_fut)
     rows.append(
         {
+            "scenario": "baseline",
             "jurisdiction_type": "county",
             "jurisdiction_name": COUNTY_JURISDICTION_NAME,
             "current_taxable_sum": county_cur,
@@ -260,16 +307,22 @@ def build_tax_aggregates(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict
     )
     json_factors["county"][COUNTY_JURISDICTION_NAME] = county_factor
 
-    add_group("municipality", "municipality", "local_current", "local_future")
-    add_group("school_district", "school_district", "local_current", "local_future")
+    add_group("municipality", "municipality", "local_taxable_current", "local_taxable_future")
+    add_group("school_district", "school_district", "local_taxable_current", "local_taxable_future")
 
-    return pd.DataFrame(rows), json_factors
+    json_payload = {
+        "default_scenario": "baseline",
+        "scenarios": {"baseline": json_factors},
+        **json_factors,
+    }
+    return pd.DataFrame(rows), json_payload
 
 
 def build_db(
     predictions_path: Path,
     assessments_path: Path | None,
     db_path: Path,
+    commercial_path: Path | None = None,
 ) -> None:
     preds = load_predictions(predictions_path)
 
@@ -288,7 +341,7 @@ def build_db(
     if db_path.exists():
         db_path.unlink()
 
-    tax_agg_df, tax_agg_json = build_tax_aggregates(df)
+    tax_agg_df, tax_agg_json = build_tax_aggregates(df, commercial_path)
 
     conn = sqlite3.connect(db_path)
     df.to_sql("parcels", conn, index=False, if_exists="replace")
@@ -321,7 +374,11 @@ def build_db(
     write_manifest(conn, predictions_path, len(df), assessments_path)
     conn.close()
     print(f"Wrote {len(df):,} homeowner parcels to {db_path}")
-    print(f"Wrote {len(tax_agg_df):,} jurisdiction tax aggregates")
+    scenarios = tax_agg_json.get("scenarios", {})
+    print(
+        f"Wrote {len(tax_agg_df):,} jurisdiction tax aggregates "
+        f"({len(scenarios)} commercial scenario(s))"
+    )
     print(f"Wrote manifest to {MANIFEST_PATH}")
 
 
@@ -340,8 +397,17 @@ def main() -> None:
         help="WPRDC property assessments CSV for address fields (recommended)",
     )
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
+    parser.add_argument(
+        "--commercial",
+        type=Path,
+        default=DEFAULT_COMMERCIAL,
+        help="Commercial current valuations CSV for revenue-neutral millage scenarios",
+    )
     args = parser.parse_args()
-    build_db(args.predictions, args.assessments, args.db)
+    commercial = args.commercial if args.commercial and args.commercial.exists() else None
+    if args.commercial and not commercial:
+        print(f"Warning: commercial file not found at {args.commercial}", file=sys.stderr)
+    build_db(args.predictions, args.assessments, args.db, commercial)
 
 
 if __name__ == "__main__":

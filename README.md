@@ -34,7 +34,8 @@ Writes `data/millage_2025.json` from the Allegheny County Treasurer.
 ```bash
 python scripts/build_db.py ^
   --predictions "C:\path\to\residential_predictions_20260503.csv" ^
-  --assessments "data\assessments_wprdc.csv"
+  --assessments "data\assessments_wprdc.csv" ^
+  --commercial "data\commercial_existing_valuations.csv"
 ```
 
 This writes `data/parcels.db` and `data/manifest.json` (includes county/local assessed values and homestead flags for tax estimates).
@@ -87,9 +88,9 @@ The parcel page shows estimated **annual** property tax for:
 - Municipality (city or borough)
 - School district
 
-Uses 2025 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`, and homestead (`HOM`) exclusion on county tax.
+Uses 2025 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`, and homestead (`HOM`) exclusion ($18,000) on county, municipality, and school taxable value.
 
-**Revenue-neutral reassessment:** after modeled reassessment, each jurisdiction (county, municipality, school district) adjusts millage so total tax revenue stays the same. If aggregate assessed value doubles, effective millage is halved. An individual home’s tax can still change if its value shifts more or less than the jurisdiction average.
+**Revenue-neutral reassessment:** after modeled reassessment, each jurisdiction (county, municipality, school district) adjusts millage so total tax revenue stays the same, including existing commercial assessed values. Commercial reassessment is not modeled; the site uses +20% commercial growth as the estimate, with a range from 0% (low) to +40% (high). An individual home’s tax can still change if its value shifts more or less than the jurisdiction average.
 
 ## Roadmap
 

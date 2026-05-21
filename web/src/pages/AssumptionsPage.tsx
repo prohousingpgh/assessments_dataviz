@@ -78,11 +78,18 @@ export function AssumptionsPage() {
           </li>
           <li>County tax uses county assessed value (WPRDC COUNTYTOTAL); city and school use local assessed value (LOCALTOTAL).</li>
           <li>
-            If a homestead flag (HOM) is on the parcel, a $18,000 county homestead exclusion is subtracted before county tax is calculated.
+            If a homestead flag (HOM) is on the parcel, a $18,000 homestead exclusion is subtracted from taxable value for county, municipality, and school taxes.
           </li>
           <li>
-            After reassessment, each taxing body adjusts its millage so total revenue stays the same: if assessed
-            values in a municipality double, millage is cut in half (revenue-neutral reassessment).
+            After reassessment, each taxing body (county, municipality, and school district separately) adjusts
+            its millage so total tax receipts for that body stay the same: aggregate pre-reassessment receipts
+            equal aggregate post-reassessment receipts, using sums of taxable value × millage for all parcels in
+            that body. Existing commercial property values are included in those totals.
+          </li>
+          <li>
+            Commercial reassessment is not modeled. Revenue-neutral millage uses +20% commercial growth as
+            the estimate, with a range from 0% (low bound) to +40% (high bound) from current commercial
+            assessed values.
           </li>
           <li>
             Your home&apos;s tax can still rise or fall if its assessed value changes more or less than the jurisdiction average.

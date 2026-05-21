@@ -4,6 +4,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+from api.commercial_scenarios import (
+    ESTIMATED_COMMERCIAL_GROWTH,
+    SCENARIO_GROWTH_RATES,
+    SCENARIO_LABELS,
+    SCENARIO_SHORT_LABELS,
+)
 from api.tax_aggregates import get_revenue_neutral_factor, load_tax_aggregates
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,12 +60,12 @@ def _mill_tax(taxable: float, mills: float | None) -> float:
     return taxable * mills / 1000.0
 
 
-def _county_taxable(county_assessed: float, homestead_flag: str | None, exclusion: float) -> float:
-    if county_assessed <= 0:
+def _homestead_taxable(assessed: float, homestead_flag: str | None, exclusion: float) -> float:
+    if assessed <= 0:
         return 0.0
     if (homestead_flag or "").strip().upper() == "HOM":
-        return max(0.0, county_assessed - exclusion)
-    return county_assessed
+        return max(0.0, assessed - exclusion)
+    return assessed
 
 
 def _scale_assessed(base: float, new_fmv: float, current_fmv: float) -> float:
@@ -88,6 +94,7 @@ def _line(
     *,
     nominal_mills: float | None = None,
     revenue_neutral_factor: float | None = None,
+    scenario: str | None = None,
 ) -> dict[str, Any]:
     line: dict[str, Any] = {
         "label": label,
@@ -99,7 +106,84 @@ def _line(
     if nominal_mills is not None and revenue_neutral_factor is not None and revenue_neutral_factor != 1.0:
         line["mills_nominal"] = round(nominal_mills, 4)
         line["revenue_neutral_factor"] = round(revenue_neutral_factor, 6)
+    if scenario:
+        line["scenario"] = scenario
     return line
+
+
+def _compute_future_breakdown(
+    *,
+    scenario: str,
+    aggregates: dict[str, Any],
+    county_taxable_fut: float,
+    local_taxable_fut: float,
+    county_mills: float,
+    muni_mills: float | None,
+    school_mills: float | None,
+    municipality_label: str,
+    school_label: str,
+    muni_key: str | None,
+    school_key: str | None,
+    municipality: str | None,
+    school_district: str | None,
+) -> dict[str, Any]:
+    county_factor, _ = get_revenue_neutral_factor(
+        aggregates, "county", "Allegheny County", scenario=scenario
+    )
+    muni_factor, _ = get_revenue_neutral_factor(
+        aggregates, "municipality", municipality, scenario=scenario
+    )
+    school_factor, _ = get_revenue_neutral_factor(
+        aggregates, "school_district", school_district, scenario=scenario
+    )
+
+    county_mills_future = _effective_future_mills(county_mills, county_factor)
+    muni_mills_future = _effective_future_mills(muni_mills, muni_factor)
+    school_mills_future = _effective_future_mills(school_mills, school_factor)
+
+    county_fut = _mill_tax(county_taxable_fut, county_mills_future)
+    muni_fut = _mill_tax(local_taxable_fut, muni_mills_future)
+    school_fut = _mill_tax(local_taxable_fut, school_mills_future)
+    total = county_fut + muni_fut + school_fut
+
+    return {
+        "county": _line(
+            "Allegheny County",
+            county_taxable_fut,
+            county_mills_future,
+            county_fut,
+            "Allegheny County",
+            nominal_mills=county_mills,
+            revenue_neutral_factor=county_factor,
+            scenario=scenario,
+        ),
+        "municipality": _line(
+            municipality_label,
+            local_taxable_fut,
+            muni_mills_future,
+            muni_fut,
+            muni_key,
+            nominal_mills=muni_mills,
+            revenue_neutral_factor=muni_factor,
+            scenario=scenario,
+        ),
+        "school": _line(
+            school_label,
+            local_taxable_fut,
+            school_mills_future,
+            school_fut,
+            school_key,
+            nominal_mills=school_mills,
+            revenue_neutral_factor=school_factor,
+            scenario=scenario,
+        ),
+        "total": round(total, 2),
+        "factors": {
+            "county": county_factor,
+            "municipality": muni_factor,
+            "school_district": school_factor,
+        },
+    }
 
 
 def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
@@ -138,102 +222,99 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     if school_mills is None:
         warnings.append(f"School district millage not found for “{school_district}”.")
 
-    county_factor, county_meta = get_revenue_neutral_factor(aggregates, "county", "Allegheny County")
-    muni_factor, muni_meta = get_revenue_neutral_factor(
-        aggregates, "municipality", municipality
-    )
-    school_factor, school_meta = get_revenue_neutral_factor(
-        aggregates, "school_district", school_district
-    )
-
-    if not muni_meta.get("found") and municipality:
-        warnings.append(
-            f"Revenue-neutral millage factor unavailable for municipality “{municipality}”; using nominal millage."
-        )
-    if not school_meta.get("found") and school_district:
-        warnings.append(
-            f"Revenue-neutral millage factor unavailable for school district “{school_district}”; using nominal millage."
-        )
-
-    county_mills_future = _effective_future_mills(county_mills, county_factor)
-    muni_mills_future = _effective_future_mills(muni_mills, muni_factor)
-    school_mills_future = _effective_future_mills(school_mills, school_factor)
-
-    county_taxable_cur = _county_taxable(county_current, homestead_flag, exclusion)
-    county_taxable_fut = _county_taxable(county_future, homestead_flag, exclusion)
+    county_taxable_cur = _homestead_taxable(county_current, homestead_flag, exclusion)
+    county_taxable_fut = _homestead_taxable(county_future, homestead_flag, exclusion)
+    local_taxable_cur = _homestead_taxable(local_current, homestead_flag, exclusion)
+    local_taxable_fut = _homestead_taxable(local_future, homestead_flag, exclusion)
 
     county_cur = _mill_tax(county_taxable_cur, county_mills)
-    county_fut = _mill_tax(county_taxable_fut, county_mills_future)
-    muni_cur = _mill_tax(local_current, muni_mills)
-    muni_fut = _mill_tax(local_future, muni_mills_future)
-    school_cur = _mill_tax(local_current, school_mills)
-    school_fut = _mill_tax(local_future, school_mills_future)
-
+    muni_cur = _mill_tax(local_taxable_cur, muni_mills)
+    school_cur = _mill_tax(local_taxable_cur, school_mills)
     current_total = county_cur + muni_cur + school_cur
-    future_total = county_fut + muni_fut + school_fut
-    delta = future_total - current_total
-    delta_pct = (delta / current_total * 100) if current_total > 0 else None
 
     municipality_label = municipality or "Municipality"
     school_label = school_district or "School district"
+
+    scenarios_available = list(aggregates.get("scenarios", {"baseline": {}}).keys())
+    if not scenarios_available:
+        scenarios_available = ["baseline"]
+
+    future_scenarios: dict[str, Any] = {}
+    for scenario in scenarios_available:
+        if scenario not in SCENARIO_GROWTH_RATES:
+            continue
+        future_breakdown = _compute_future_breakdown(
+            scenario=scenario,
+            aggregates=aggregates,
+            county_taxable_fut=county_taxable_fut,
+            local_taxable_fut=local_taxable_fut,
+            county_mills=county_mills,
+            muni_mills=muni_mills,
+            school_mills=school_mills,
+            municipality_label=municipality_label,
+            school_label=school_label,
+            muni_key=muni_key,
+            school_key=school_key,
+            municipality=municipality,
+            school_district=school_district,
+        )
+        fut_total = future_breakdown["total"]
+        delta = fut_total - current_total
+        delta_pct = (delta / current_total * 100) if current_total > 0 else None
+        future_scenarios[scenario] = {
+            "id": scenario,
+            "label": SCENARIO_LABELS.get(scenario, scenario),
+            "short_label": SCENARIO_SHORT_LABELS.get(scenario, scenario),
+            "commercial_growth_rate": SCENARIO_GROWTH_RATES.get(scenario),
+            "county": future_breakdown["county"],
+            "municipality": future_breakdown["municipality"],
+            "school": future_breakdown["school"],
+            "total": fut_total,
+            "delta": {
+                "total_dollars": round(delta, 2),
+                "total_percent": round(delta_pct, 2) if delta_pct is not None else None,
+            },
+            "jurisdiction_factors": future_breakdown["factors"],
+        }
+
+    default_scenario = aggregates.get("default_scenario", "baseline")
+    if default_scenario not in future_scenarios:
+        default_scenario = next(iter(future_scenarios), "baseline")
+    baseline = future_scenarios[default_scenario]
+
+    notes = [
+        "Estimated annual liability using 2025 nominal millage; not actual payments.",
+        "After reassessment, millage is adjusted within each jurisdiction so total tax revenue stays the same (revenue-neutral reassessment), including existing commercial assessed values.",
+        f"Commercial reassessment is not modeled; the estimated case assumes +{int(ESTIMATED_COMMERCIAL_GROWTH * 100)}% "
+        f"aggregate commercial growth, with a range from 0% (low) to +40% (high).",
+        "Your tax can still change if your home’s assessed value rises or falls more than the jurisdiction average.",
+        "County tax uses county assessed value; municipality and school use local assessed value.",
+        "Homestead (HOM): $18,000 exclusion from taxable value for county, municipality, and school when owner-occupied.",
+    ]
 
     return {
         "tax_year": cfg.get("tax_year"),
         "revenue_neutral_reassessment": True,
         "homestead_applied": (homestead_flag or "").strip().upper() == "HOM",
         "homestead_exclusion": exclusion if (homestead_flag or "").strip().upper() == "HOM" else 0,
+        "default_scenario": default_scenario,
         "current": {
             "county": _line("Allegheny County", county_taxable_cur, county_mills, county_cur, "Allegheny County"),
             "municipality": _line(
-                municipality_label, local_current, muni_mills, muni_cur, muni_key
+                municipality_label, local_taxable_cur, muni_mills, muni_cur, muni_key
             ),
-            "school": _line(school_label, local_current, school_mills, school_cur, school_key),
+            "school": _line(school_label, local_taxable_cur, school_mills, school_cur, school_key),
             "total": round(current_total, 2),
         },
         "future": {
-            "county": _line(
-                "Allegheny County",
-                county_taxable_fut,
-                county_mills_future,
-                county_fut,
-                "Allegheny County",
-                nominal_mills=county_mills,
-                revenue_neutral_factor=county_factor,
-            ),
-            "municipality": _line(
-                municipality_label,
-                local_future,
-                muni_mills_future,
-                muni_fut,
-                muni_key,
-                nominal_mills=muni_mills,
-                revenue_neutral_factor=muni_factor,
-            ),
-            "school": _line(
-                school_label,
-                local_future,
-                school_mills_future,
-                school_fut,
-                school_key,
-                nominal_mills=school_mills,
-                revenue_neutral_factor=school_factor,
-            ),
-            "total": round(future_total, 2),
+            "county": baseline["county"],
+            "municipality": baseline["municipality"],
+            "school": baseline["school"],
+            "total": baseline["total"],
         },
-        "delta": {
-            "total_dollars": round(delta, 2),
-            "total_percent": round(delta_pct, 2) if delta_pct is not None else None,
-        },
-        "jurisdiction_factors": {
-            "county": county_meta,
-            "municipality": muni_meta,
-            "school_district": school_meta,
-        },
+        "delta": baseline["delta"],
+        "future_scenarios": future_scenarios,
+        "jurisdiction_factors": baseline.get("jurisdiction_factors", {}),
         "warnings": warnings,
-        "notes": [
-            "Estimated annual liability using 2025 nominal millage; not actual payments.",
-            "After reassessment, millage is adjusted within each jurisdiction so total tax revenue stays the same (revenue-neutral reassessment).",
-            "Your tax can still change if your home’s assessed value rises or falls more than the jurisdiction average.",
-            "County tax uses county assessed value; municipality and school use local assessed value.",
-        ],
+        "notes": notes,
     }
