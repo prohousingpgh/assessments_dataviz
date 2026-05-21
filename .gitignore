@@ -1,0 +1,15 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+.env
+data/*.db
+data/*.sqlite
+data/*.csv
+data/*.html
+data/data-bundle.zip
+data/manifest.json
+data/tax_aggregates.json
+*.log
+.DS_Store

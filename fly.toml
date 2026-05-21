@@ -1,0 +1,24 @@
+# Fly.io app for https://github.com/prohousingpgh/assessments_dataviz
+# After first clone: fly apps create assessments-dataviz (or fly launch --no-deploy)
+
+app = "assessments-dataviz"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

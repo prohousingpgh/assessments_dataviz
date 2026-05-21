@@ -1,0 +1,348 @@
+"""
+Build SQLite database for the homeowner assessment explorer.
+
+Usage:
+  python scripts/build_db.py \\
+    --predictions path/to/residential_predictions.csv \\
+    --assessments path/to/wprdc_property_assessments.csv
+
+The WPRDC assessments file provides street addresses for search (PARID join).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sqlite3
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+from homeowner_uses import is_homeowner_use  # noqa: E402
+
+DEFAULT_DB = ROOT / "data" / "parcels.db"
+MANIFEST_PATH = ROOT / "data" / "manifest.json"
+MILLAGE_PATH = ROOT / "data" / "millage_2025.json"
+AGGREGATES_PATH = ROOT / "data" / "tax_aggregates.json"
+HOMESTEAD_EXCLUSION = 18_000
+COUNTY_JURISDICTION_NAME = "Allegheny County"
+
+
+def normalize_address(
+    house: str | float | None,
+    fraction: str | float | None,
+    street: str | float | None,
+    unit: str | float | None,
+    city: str | float | None,
+    state: str | float | None,
+    zip_code: str | float | None,
+) -> str:
+    def s(v: str | float | None) -> str:
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            return ""
+        return str(v).strip()
+
+    parts = [s(house), s(fraction), s(street), s(unit)]
+    line1 = " ".join(p for p in parts if p)
+    line2 = ", ".join(p for p in [s(city), s(state)] if p)
+    tail = s(zip_code)
+    if tail:
+        line2 = f"{line2} {tail}".strip() if line2 else tail
+    return ", ".join(p for p in [line1, line2] if p)
+
+
+def normalize_search_key(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).strip()
+
+
+def load_assessment_fields(assessments_path: Path) -> pd.DataFrame:
+    usecols = [
+        "PARID",
+        "PROPERTYHOUSENUM",
+        "PROPERTYFRACTION",
+        "PROPERTYADDRESS",
+        "PROPERTYUNIT",
+        "PROPERTYCITY",
+        "PROPERTYSTATE",
+        "PROPERTYZIP",
+        "COUNTYTOTAL",
+        "LOCALTOTAL",
+        "HOMESTEADFLAG",
+    ]
+    df = pd.read_csv(assessments_path, usecols=usecols, dtype=str, low_memory=False)
+    df = df.rename(columns={"PARID": "parcel_id"})
+    for col in ("COUNTYTOTAL", "LOCALTOTAL"):
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.rename(
+        columns={
+            "COUNTYTOTAL": "county_total",
+            "LOCALTOTAL": "local_total",
+            "HOMESTEADFLAG": "homestead_flag",
+        }
+    )
+    df["address_display"] = df.apply(
+        lambda r: normalize_address(
+            r["PROPERTYHOUSENUM"],
+            r["PROPERTYFRACTION"],
+            r["PROPERTYADDRESS"],
+            r["PROPERTYUNIT"],
+            r["PROPERTYCITY"],
+            r["PROPERTYSTATE"],
+            r["PROPERTYZIP"],
+        ),
+        axis=1,
+    )
+    df["address_search"] = df["address_display"].map(normalize_search_key)
+    return df[
+        [
+            "parcel_id",
+            "address_display",
+            "address_search",
+            "county_total",
+            "local_total",
+            "homestead_flag",
+        ]
+    ].drop_duplicates("parcel_id")
+
+
+def load_predictions(predictions_path: Path) -> pd.DataFrame:
+    df = pd.read_csv(predictions_path, dtype=str, low_memory=False)
+    rename = {
+        "PARCEL_ID": "parcel_id",
+        "USE_DESCRIPTION": "use_description",
+        "MUNICIPALITY": "municipality",
+        "SCHOOL_DISTRICT": "school_district",
+        "LAND_AREA_SQFT": "land_area_sqft",
+        "BUILDING_AREA_SQFT": "building_area_sqft",
+        "CURRENT_ASSESSMENT_LAND": "current_assessment_land",
+        "CURRENT_ASSESSMENT_TOTAL": "current_assessment_total",
+        "NEW_ASSESSMENT_LAND": "new_assessment_land",
+        "NEW_ASSESSMENT_TOTAL": "new_assessment_total",
+    }
+    df = df.rename(columns=rename)
+    df = df[df["use_description"].map(lambda u: is_homeowner_use(str(u)))]
+    for col in [
+        "land_area_sqft",
+        "building_area_sqft",
+        "current_assessment_land",
+        "current_assessment_total",
+        "new_assessment_land",
+        "new_assessment_total",
+    ]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df["municipality"] = df["municipality"].str.strip()
+    df["value_change_dollars"] = df["new_assessment_total"] - df["current_assessment_total"]
+    df["value_change_pct"] = (
+        (df["value_change_dollars"] / df["current_assessment_total"].replace(0, pd.NA)) * 100
+    )
+    return df
+
+
+def write_manifest(
+    conn: sqlite3.Connection,
+    predictions_path: Path,
+    row_count: int,
+    assessments_path: Path | None = None,
+) -> None:
+    import json
+    from datetime import datetime, timezone
+
+    cur = conn.execute(
+        """
+        SELECT
+          AVG(value_change_pct) AS median_proxy,
+          SUM(current_assessment_total) AS cur_sum,
+          SUM(new_assessment_total) AS new_sum
+        FROM parcels
+        WHERE current_assessment_total > 0 AND new_assessment_total > 0
+        """
+    )
+    row = cur.fetchone()
+    ratio = (row[2] / row[1]) if row and row[1] else None
+
+    manifest = {
+        "scenario_id": "openavmkit-homeowner",
+        "scenario_label": "Pro-Housing Pittsburgh modeled reassessment (homeowners)",
+        "data_as_of": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "source_predictions": str(predictions_path.name),
+        "source_assessments": assessments_path.name if assessments_path else None,
+        "has_street_addresses": assessments_path is not None,
+        "parcel_count": row_count,
+        "county_residential_value_ratio": ratio,
+        "methodology_url": "https://github.com/prohousingpgh/agc_assessments",
+        "valuation_date": "2025-01-01",
+        "tax_year": 2025,
+        "disclaimer": "Illustrative estimates only. Not official county reassessment or tax bills.",
+    }
+    if MILLAGE_PATH.exists():
+        mill = json.loads(MILLAGE_PATH.read_text(encoding="utf-8"))
+        manifest["tax_millage_year"] = mill.get("tax_year")
+        manifest["tax_assumptions"] = (
+            "2025 nominal millage; after reassessment, millage is adjusted per jurisdiction so total "
+            "tax revenue stays the same (revenue-neutral reassessment). Homestead exclusion on county tax when HOM."
+        )
+    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+
+def _county_taxable_series(
+    county_assessed: pd.Series, homestead: pd.Series, exclusion: float
+) -> pd.Series:
+    taxable = county_assessed.fillna(0).astype(float).copy()
+    hom = homestead.fillna("").astype(str).str.strip().str.upper() == "HOM"
+    taxable.loc[hom] = (taxable.loc[hom] - exclusion).clip(lower=0)
+    return taxable
+
+
+def build_tax_aggregates(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
+    """Per-jurisdiction sums for revenue-neutral millage after reassessment."""
+    work = df.copy()
+    fmv_cur = work["current_assessment_total"].astype(float)
+    fmv_new = work["new_assessment_total"].astype(float)
+    ratio = fmv_new / fmv_cur.replace(0, pd.NA)
+
+    work["local_current"] = work["local_total"].astype(float).fillna(fmv_cur)
+    work["local_future"] = work["local_current"] * ratio
+    work["county_current"] = work["county_total"].astype(float).fillna(fmv_cur)
+    work["county_future"] = work["county_current"] * ratio
+    homestead_col = work["homestead_flag"] if "homestead_flag" in work.columns else pd.Series([""] * len(work))
+    work["county_taxable_current"] = _county_taxable_series(
+        work["county_current"], homestead_col, HOMESTEAD_EXCLUSION
+    )
+    work["county_taxable_future"] = _county_taxable_series(
+        work["county_future"], homestead_col, HOMESTEAD_EXCLUSION
+    )
+
+    rows: list[dict[str, object]] = []
+    json_factors: dict[str, dict[str, float]] = {
+        "county": {},
+        "municipality": {},
+        "school_district": {},
+    }
+
+    def add_group(jtype: str, name_col: str, cur_col: str, fut_col: str) -> None:
+        grouped = work.groupby(name_col, dropna=False).agg(
+            current_sum=(cur_col, "sum"),
+            future_sum=(fut_col, "sum"),
+        )
+        for name, row in grouped.iterrows():
+            if not name or (isinstance(name, float) and pd.isna(name)):
+                continue
+            cur = float(row["current_sum"] or 0)
+            fut = float(row["future_sum"] or 0)
+            factor = (cur / fut) if fut > 0 else 1.0
+            rows.append(
+                {
+                    "jurisdiction_type": jtype,
+                    "jurisdiction_name": str(name).strip(),
+                    "current_taxable_sum": cur,
+                    "future_taxable_sum": fut,
+                    "revenue_neutral_factor": factor,
+                }
+            )
+            json_factors[jtype][str(name).strip()] = factor
+
+    county_cur = float(work["county_taxable_current"].sum())
+    county_fut = float(work["county_taxable_future"].sum())
+    county_factor = (county_cur / county_fut) if county_fut > 0 else 1.0
+    rows.append(
+        {
+            "jurisdiction_type": "county",
+            "jurisdiction_name": COUNTY_JURISDICTION_NAME,
+            "current_taxable_sum": county_cur,
+            "future_taxable_sum": county_fut,
+            "revenue_neutral_factor": county_factor,
+        }
+    )
+    json_factors["county"][COUNTY_JURISDICTION_NAME] = county_factor
+
+    add_group("municipality", "municipality", "local_current", "local_future")
+    add_group("school_district", "school_district", "local_current", "local_future")
+
+    return pd.DataFrame(rows), json_factors
+
+
+def build_db(
+    predictions_path: Path,
+    assessments_path: Path | None,
+    db_path: Path,
+) -> None:
+    preds = load_predictions(predictions_path)
+
+    if assessments_path and assessments_path.exists():
+        assessment_fields = load_assessment_fields(assessments_path)
+        df = preds.merge(assessment_fields, on="parcel_id", how="left")
+    else:
+        print("Warning: no --assessments file; address search will be limited.", file=sys.stderr)
+        df = preds.copy()
+        df["address_display"] = df["municipality"] + " · Parcel " + df["parcel_id"]
+        df["address_search"] = df["address_display"].str.lower()
+
+    df = df[df["address_search"].notna() & (df["address_search"] != "")]
+
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    if db_path.exists():
+        db_path.unlink()
+
+    tax_agg_df, tax_agg_json = build_tax_aggregates(df)
+
+    conn = sqlite3.connect(db_path)
+    df.to_sql("parcels", conn, index=False, if_exists="replace")
+    tax_agg_df.to_sql("tax_jurisdiction_aggregates", conn, index=False, if_exists="replace")
+
+    AGGREGATES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    AGGREGATES_PATH.write_text(json.dumps(tax_agg_json, indent=2), encoding="utf-8")
+
+    conn.execute(
+        """
+        CREATE VIRTUAL TABLE parcels_fts USING fts5(
+            address_search,
+            municipality,
+            school_district,
+            parcel_id UNINDEXED
+        )
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO parcels_fts(address_search, municipality, school_district, parcel_id)
+        SELECT address_search, municipality, school_district, parcel_id FROM parcels
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_parcels_id ON parcels(parcel_id)"
+    )
+    conn.commit()
+
+    write_manifest(conn, predictions_path, len(df), assessments_path)
+    conn.close()
+    print(f"Wrote {len(df):,} homeowner parcels to {db_path}")
+    print(f"Wrote {len(tax_agg_df):,} jurisdiction tax aggregates")
+    print(f"Wrote manifest to {MANIFEST_PATH}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Build homeowner parcel SQLite database")
+    parser.add_argument(
+        "--predictions",
+        type=Path,
+        required=True,
+        help="residential_predictions.csv from agc_assessments",
+    )
+    parser.add_argument(
+        "--assessments",
+        type=Path,
+        default=None,
+        help="WPRDC property assessments CSV for address fields (recommended)",
+    )
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB)
+    args = parser.parse_args()
+    build_db(args.predictions, args.assessments, args.db)
+
+
+if __name__ == "__main__":
+    main()

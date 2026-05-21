@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Fetch latest data release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=$(gh release list --limit 20 --json tagName \
+            --jq '[.[].tagName | select(startswith("data-"))][0]')
+          if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
+            echo "::error::No GitHub release tag starting with data-. Publish one first (see DEPLOY.md)."
+            exit 1
+          fi
+          echo "Using data release: ${TAG}"
+          gh release download "${TAG}" --pattern 'data-bundle.zip' --dir /tmp
+          unzip -o /tmp/data-bundle.zip -d data/
+
+      - name: Verify runtime data
+        run: python scripts/verify_data.py
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
