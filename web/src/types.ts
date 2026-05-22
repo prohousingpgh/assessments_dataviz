@@ -94,6 +94,8 @@ export type PropertyTaxes = {
   tax_year?: number
   revenue_neutral_reassessment?: boolean
   parcel_residential_growth_rate?: number | null
+  /** Countywide average residential assessment growth (decimal); slider midpoint. */
+  county_avg_residential_growth_rate?: number | null
   commercial_growth_rate?: number
   revenue_neutral_bases?: RevenueNeutralBases
   homestead_applied?: boolean

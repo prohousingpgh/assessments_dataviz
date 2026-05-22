@@ -192,9 +192,9 @@ export function AssumptionsPage() {
             existing commercial assessments grow by a rate you choose on the parcel page.
           </li>
           <li>
-            <strong>Slider default:</strong> commercial growth matches this home&apos;s modeled
-            residential assessment change (center of the slider); drag left for slower commercial
-            growth or right for faster.
+            <strong>Slider default:</strong> commercial growth starts at the countywide average
+            residential assessment change in the dataset (center of the slider for every address);
+            drag left for slower commercial growth or right for faster.
           </li>
           <li>
             Moving the slider recalculates revenue-neutral millage and your estimated post-reassessment

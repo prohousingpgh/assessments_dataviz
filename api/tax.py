@@ -213,11 +213,16 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     homestead_flag = parcel.get("homestead_flag")
     exclusion_current = float(cfg.get("homestead_exclusion", DEFAULT_HOMESTEAD_EXCLUSION))
     county_value_ratio: float | None = None
+    county_avg_residential_growth: float | None = None
     if _db_connection is not None:
         summary = get_summary_stats(_db_connection)
-        county_value_ratio = summary.get("county_value_ratio")
-        if county_value_ratio is not None:
-            county_value_ratio = float(county_value_ratio)
+        if summary.get("county_value_ratio") is not None:
+            county_value_ratio = float(summary["county_value_ratio"])
+        avg_pct = summary.get("avg_value_change_pct")
+        if avg_pct is not None:
+            county_avg_residential_growth = float(avg_pct) / 100.0
+        elif county_value_ratio is not None:
+            county_avg_residential_growth = county_value_ratio - 1.0
     has_homestead = (homestead_flag or "").strip().upper() == "HOM"
 
     municipality = parcel.get("municipality")
@@ -337,7 +342,7 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
         "Estimated annual liability using 2025 nominal millage; not actual payments.",
         "After reassessment, millage is adjusted within each jurisdiction so total tax revenue stays the same (revenue-neutral reassessment), including existing commercial assessed values.",
         "Commercial reassessment is not modeled; use the slider on the parcel page to set "
-        "aggregate commercial assessment growth (defaults to this home's modeled residential growth).",
+        "aggregate commercial assessment growth (defaults to countywide average residential growth).",
         "Your tax can still change if your home’s assessed value rises or falls more than the jurisdiction average.",
         "County tax uses county assessed value; municipality and school use local assessed value.",
         "Homestead (HOM): per-jurisdiction Act 50 exclusions (see /homestead-exemptions); "
@@ -361,6 +366,7 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
         },
         "county_residential_value_ratio": county_value_ratio,
         "parcel_residential_growth_rate": parcel_residential_growth,
+        "county_avg_residential_growth_rate": county_avg_residential_growth,
         "revenue_neutral_bases": revenue_neutral_bases,
         "default_scenario": default_scenario,
         "current": {

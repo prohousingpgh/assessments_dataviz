@@ -7,9 +7,11 @@ import { TaxingBodyLabel, type TaxingBodyKind } from '../components/TaxingBodyLa
 import { usePageTitle } from '../hooks/usePageTitle'
 import { CommercialGrowthSlider } from '../components/CommercialGrowthSlider'
 import {
+  clampCommercialGrowth,
   commercialGrowthRange,
-  defaultCommercialGrowthRate,
+  countyAvgFromTaxesOrSummary,
   describeCommercialGrowthAssumption,
+  growthFromSliderPosition,
 } from '../commercialGrowth'
 import {
   formatJurisdictionName,
@@ -44,31 +46,41 @@ export function ParcelPage() {
     setCommercialGrowth(null)
   }, [parcelId])
 
-  useEffect(() => {
-    if (taxes && commercialGrowth === null) {
-      setCommercialGrowth(defaultCommercialGrowthRate(taxes))
-    }
-  }, [taxes, commercialGrowth])
-
-  const residentialGrowth =
+  const parcelResidentialGrowth =
     taxes?.parcel_residential_growth_rate ??
     (parcel?.current_assessment_total && parcel.current_assessment_total > 0
       ? ((parcel.new_assessment_total ?? 0) - parcel.current_assessment_total) /
         parcel.current_assessment_total
-      : 0.2)
+      : undefined)
 
-  const growthRange = useMemo(
-    () => commercialGrowthRange(residentialGrowth),
-    [residentialGrowth]
+  const countyAvgResidentialGrowth = useMemo(
+    () => countyAvgFromTaxesOrSummary(taxes, summary),
+    [taxes, summary]
   )
 
-  const commercialGrowthRate =
-    commercialGrowth ?? growthRange.center
+  const growthRange = useMemo(
+    () => commercialGrowthRange(countyAvgResidentialGrowth, parcelResidentialGrowth),
+    [countyAvgResidentialGrowth, parcelResidentialGrowth]
+  )
+
+  useEffect(() => {
+    if (taxes && commercialGrowth === null) {
+      setCommercialGrowth(growthFromSliderPosition(50, growthRange))
+    }
+  }, [taxes, commercialGrowth, growthRange])
+
+  const commercialGrowthRate = clampCommercialGrowth(
+    commercialGrowth ?? growthRange.center,
+    growthRange
+  )
 
   const commercialAssumptionNote = useMemo(
     () =>
-      describeCommercialGrowthAssumption(commercialGrowthRate, residentialGrowth),
-    [commercialGrowthRate, residentialGrowth]
+      describeCommercialGrowthAssumption(
+        commercialGrowthRate,
+        countyAvgResidentialGrowth
+      ),
+    [commercialGrowthRate, countyAvgResidentialGrowth]
   )
 
   const taxAdjustments = useMemo(() => {

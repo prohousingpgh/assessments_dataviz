@@ -1,6 +1,8 @@
 import {
   type CommercialGrowthRange,
+  formatCommercialGrowthPercent,
   growthFromSliderPosition,
+  sliderEndpointGrowth,
   sliderPositionForGrowth,
 } from '../commercialGrowth'
 import { formatPct } from '../format'
@@ -17,7 +19,12 @@ export function CommercialGrowthSlider({
   onChange,
 }: CommercialGrowthSliderProps) {
   const position = sliderPositionForGrowth(value, range)
-  const residentialPct = range.residential * 100
+  const displayGrowth = growthFromSliderPosition(position, range)
+  const tickMin = sliderEndpointGrowth(range, 'min')
+  const tickCenter = sliderEndpointGrowth(range, 'center')
+  const tickMax = sliderEndpointGrowth(range, 'max')
+  const parcelPct =
+    range.parcelResidential != null ? range.parcelResidential * 100 : null
 
   return (
     <div className="commercial-growth-control">
@@ -26,7 +33,7 @@ export function CommercialGrowthSlider({
           <strong>Commercial assessment growth</strong>
         </label>
         <span className="commercial-growth-value" aria-live="polite">
-          {formatPct(value * 100)} commercial
+          {formatCommercialGrowthPercent(displayGrowth)} commercial
         </span>
       </div>
       <input
@@ -43,17 +50,25 @@ export function CommercialGrowthSlider({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={position}
-        aria-valuetext={`${position} percent along scale from slower to faster commercial growth`}
+        aria-valuetext={`${formatCommercialGrowthPercent(displayGrowth)} commercial growth`}
       />
       <div className="commercial-growth-ticks" aria-hidden="true">
-        <span>Slower ({formatPct(range.min * 100)})</span>
-        <span>Same as residential ({formatPct(range.center * 100)})</span>
-        <span>Faster ({formatPct(range.max * 100)})</span>
+        <span>Slower ({formatCommercialGrowthPercent(tickMin)})</span>
+        <span>County average ({formatCommercialGrowthPercent(tickCenter)})</span>
+        <span>Faster ({formatCommercialGrowthPercent(tickMax)})</span>
       </div>
       <p className="tax-option-help">
         We do not model commercial reassessment parcel-by-parcel. Drag the slider to set how much
         existing commercial assessed value grows when calculating revenue-neutral millage. The
-        center marks your home&apos;s modeled residential growth ({formatPct(residentialPct)}).
+        center is the <strong>countywide average</strong> residential assessment change in this
+        dataset ({formatCommercialGrowthPercent(tickCenter)}) — the same starting point for every
+        address.
+        {parcelPct != null && (
+          <>
+            {' '}
+            This home&apos;s modeled residential growth is {formatPct(parcelPct)}.
+          </>
+        )}
       </p>
     </div>
   )
