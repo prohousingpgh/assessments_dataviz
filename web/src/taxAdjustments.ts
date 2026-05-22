@@ -1,3 +1,4 @@
+import { applyCommercialGrowth } from './commercialGrowth'
 import { applyHomesteadExemption } from './homesteadExemption'
 import { applyIncomeProtection } from './taxIncomeProtection'
 import type { Parcel, PropertyTaxes } from './types'
@@ -7,14 +8,16 @@ export function applyParcelTaxAdjustments(
   parcel: Parcel,
   homesteadEnabled: boolean,
   incomeBelow125Ami: boolean,
+  commercialGrowthRate: number,
   countyResidentialValueRatio?: number | null
 ): {
   displayTaxes: PropertyTaxes
   homestead: ReturnType<typeof applyHomesteadExemption>
   income: ReturnType<typeof applyIncomeProtection> | null
 } {
+  const withCommercial = applyCommercialGrowth(taxes, commercialGrowthRate)
   const homestead = applyHomesteadExemption(
-    taxes,
+    withCommercial,
     parcel,
     homesteadEnabled,
     countyResidentialValueRatio

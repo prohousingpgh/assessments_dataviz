@@ -3,7 +3,7 @@ import logo from '../assets/logo_white.webp'
 
 const nav = [
   { to: '/', label: 'Look up your home' },
-  { to: '/assumptions', label: 'How we estimate' },
+  { to: '/assumptions', label: 'Methodology' },
 ]
 
 export function Layout() {

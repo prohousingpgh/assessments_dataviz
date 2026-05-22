@@ -73,9 +73,29 @@ export type HomesteadExclusionsByBody = {
   school: HomesteadBodyExclusions
 }
 
+export type RevenueNeutralBase = {
+  jurisdiction_type?: string
+  jurisdiction_name?: string
+  method?: 'sums' | 'interpolation'
+  current_taxable_sum?: number
+  residential_future_taxable?: number
+  commercial_current_taxable?: number
+  factors_by_growth?: Record<string, number>
+}
+
+export type RevenueNeutralBases = {
+  reference_commercial_growth?: number
+  county?: RevenueNeutralBase
+  municipality?: RevenueNeutralBase
+  school?: RevenueNeutralBase
+}
+
 export type PropertyTaxes = {
   tax_year?: number
   revenue_neutral_reassessment?: boolean
+  parcel_residential_growth_rate?: number | null
+  commercial_growth_rate?: number
+  revenue_neutral_bases?: RevenueNeutralBases
   homestead_applied?: boolean
   homestead_exclusion?: number
   homestead_exclusion_future?: number

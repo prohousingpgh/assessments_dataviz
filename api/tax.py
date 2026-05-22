@@ -16,7 +16,11 @@ from api.homestead import (
     TaxingBody,
     homestead_exclusion_amount,
 )
-from api.tax_aggregates import get_revenue_neutral_factor, load_tax_aggregates
+from api.tax_aggregates import (
+    build_revenue_neutral_bases,
+    get_revenue_neutral_factor,
+    load_tax_aggregates,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 MILLAGE_PATH = ROOT / "data" / "millage_2025.json"
@@ -266,6 +270,18 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     school_cur = _mill_tax(local_taxable_cur_school, school_mills)
     current_total = county_cur + muni_cur + school_cur
 
+    if fmv_current > 0 and fmv_future > 0:
+        parcel_residential_growth = (fmv_future - fmv_current) / fmv_current
+    else:
+        parcel_residential_growth = None
+
+    revenue_neutral_bases = build_revenue_neutral_bases(
+        aggregates,
+        municipality=municipality,
+        school_district=school_district,
+        db=_db_connection,
+    )
+
     municipality_label = municipality or "Municipality"
     school_label = school_district or "School district"
 
@@ -320,8 +336,8 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     notes = [
         "Estimated annual liability using 2025 nominal millage; not actual payments.",
         "After reassessment, millage is adjusted within each jurisdiction so total tax revenue stays the same (revenue-neutral reassessment), including existing commercial assessed values.",
-        f"Commercial reassessment is not modeled; the estimated case assumes +{int(ESTIMATED_COMMERCIAL_GROWTH * 100)}% "
-        f"aggregate commercial growth, with a range from 0% (low) to +40% (high).",
+        "Commercial reassessment is not modeled; use the slider on the parcel page to set "
+        "aggregate commercial assessment growth (defaults to this home's modeled residential growth).",
         "Your tax can still change if your home’s assessed value rises or falls more than the jurisdiction average.",
         "County tax uses county assessed value; municipality and school use local assessed value.",
         "Homestead (HOM): per-jurisdiction Act 50 exclusions (see /homestead-exemptions); "
@@ -344,6 +360,8 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
             "school": {"current": school_excl_cur, "future": school_excl_fut},
         },
         "county_residential_value_ratio": county_value_ratio,
+        "parcel_residential_growth_rate": parcel_residential_growth,
+        "revenue_neutral_bases": revenue_neutral_bases,
         "default_scenario": default_scenario,
         "current": {
             "county": _line("Allegheny County", county_taxable_cur, county_mills, county_cur, "Allegheny County"),

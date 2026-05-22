@@ -276,6 +276,9 @@ export function applyHomesteadExemption(
 
   const adjusted: PropertyTaxes = {
     ...taxes,
+    commercial_growth_rate: taxes.commercial_growth_rate,
+    revenue_neutral_bases: taxes.revenue_neutral_bases,
+    parcel_residential_growth_rate: taxes.parcel_residential_growth_rate,
     homestead_applied: enabled,
     homestead_exclusion: enabled ? exclusions.county.current : 0,
     homestead_exclusion_future: enabled ? exclusions.county.future : 0,

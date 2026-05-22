@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PageHeader } from '../components/PageHeader'
 import { getManifest } from '../api'
+import { usePageTitle } from '../hooks/usePageTitle'
 import type { Manifest } from '../types'
 import { formatMoney, formatPct } from '../format'
 import {
@@ -10,6 +12,7 @@ import {
 } from '../homesteadExemption'
 
 export function AssumptionsPage() {
+  usePageTitle('Methodology & assumptions')
   const [manifest, setManifest] = useState<Manifest | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,15 +38,16 @@ export function AssumptionsPage() {
 
   return (
     <div className="page">
-      <h1>How we estimate</h1>
-      <p className="lead">
-        This page documents the assumptions behind assessed values and property tax estimates on
-        this site. For the full modeling pipeline, see{' '}
-        <a href={manifest.methodology_url} target="_blank" rel="noreferrer">
-          prohousingpgh/agc_assessments
-        </a>
-        .
-      </p>
+      <PageHeader title="Methodology & assumptions">
+        <p className="lead">
+          Assumptions behind assessed values and property tax estimates on this site. For the full
+          modeling pipeline, see{' '}
+          <a href={manifest.methodology_url} target="_blank" rel="noreferrer">
+            prohousingpgh/agc_assessments
+          </a>
+          .
+        </p>
+      </PageHeader>
 
       <div className="compare-grid">
         <section className="card">
@@ -175,8 +179,9 @@ export function AssumptionsPage() {
 
         <h3 className="assumptions-subhead">Commercial property (not modeled per parcel)</h3>
         <p>
-          We do not have parcel-level commercial reassessment estimates. Instead, commercial enters
-          only through <strong>jurisdiction totals</strong> when calculating revenue-neutral millage:
+          We do not have parcel-level commercial reassessment estimates. Commercial property still
+          affects your bill because it is part of each jurisdiction&apos;s tax base when we calculate
+          revenue-neutral millage after reassessment.
         </p>
         <ul className="bullet-list">
           <li>
@@ -184,29 +189,25 @@ export function AssumptionsPage() {
           </li>
           <li>
             <strong>After reassessment:</strong> residential future values come from OpenAvmKit;
-            commercial values change only by a fixed countywide growth band applied to existing
-            commercial assessments.
+            existing commercial assessments grow by a rate you choose on the parcel page.
           </li>
           <li>
-            <strong>Estimated case (+20% commercial growth):</strong> shown as the main
-            post-reassessment tax column.
+            <strong>Slider default:</strong> commercial growth matches this home&apos;s modeled
+            residential assessment change (center of the slider); drag left for slower commercial
+            growth or right for faster.
           </li>
           <li>
-            <strong>Range (0% and +40% commercial growth):</strong> shown as lower and upper bounds
-            on the parcel page when multiple scenarios are available.
+            Moving the slider recalculates revenue-neutral millage and your estimated post-reassessment
+            taxes immediately.
           </li>
         </ul>
-        <p className="detail-foot">
-          Residential growth in the model can differ from these commercial bands; only the commercial
-          portion of each jurisdiction&apos;s tax base uses the 0% / 20% / 40% assumptions.
-        </p>
 
         <h3 className="assumptions-subhead">Homestead exemption</h3>
         <p>
           Homestead reduces <strong>taxable</strong> assessed value (not the assessment on your deed).
           Amounts differ by taxing body and by whether we are estimating taxes today or after
           reassessment. See the full{' '}
-          <Link to="/homestead-exemptions">homestead exclusion reference table</Link> for every
+          <Link to="/homestead-exemptions">homestead exclusions reference</Link> for every
           municipality and school district.
         </p>
         <ul className="bullet-list">

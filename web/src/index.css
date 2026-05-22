@@ -83,8 +83,9 @@ a {
 
 .site-title {
   font-weight: 600;
-  font-size: 1.05rem;
-  line-height: 1.2;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: rgba(255, 255, 255, 0.95);
   transition: color 0.15s;
 }
@@ -148,17 +149,9 @@ a {
   font-size: 0.8rem;
 }
 
-.home-hero {
-  margin-bottom: 1.5rem;
-  padding: 1.35rem 1.5rem;
-  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 55%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
 @media (max-width: 720px) {
   .site-title {
-    font-size: 0.95rem;
+    font-size: 1.1rem;
   }
 
   .site-logo {
@@ -166,24 +159,39 @@ a {
   }
 }
 
-.page h1 {
+/* Page titles and intros sit above cards — no box, so actions read as distinct. */
+.page-header {
+  margin: 0 0 1.5rem;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.page-header h1 {
   font-size: 1.75rem;
   margin: 0 0 0.5rem;
   line-height: 1.2;
+  color: var(--text);
+}
+
+.page-header .lead {
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 42rem;
+}
+
+.page-header .page-meta {
+  margin: 0.35rem 0 0;
+}
+
+.page-header .parcel-sub {
+  margin: 0.25rem 0 0;
 }
 
 .lead {
   color: var(--text-muted);
   margin: 0 0 1.25rem;
   max-width: 42rem;
-}
-
-.hero-block {
-  margin-bottom: 1.25rem;
-}
-
-.home-hero .lead {
-  margin-bottom: 0;
 }
 
 .explainer h2 {
@@ -584,13 +592,13 @@ a {
   margin-top: 0.2rem;
 }
 
-.parcel-header h1 {
+.page-header--parcel h1 {
   font-size: 1.5rem;
 }
 
 .parcel-sub {
   color: var(--text-muted);
-  margin: 0.25rem 0;
+  margin: 0;
 }
 
 .page-meta {
@@ -716,6 +724,66 @@ a {
   font-size: 0.85em;
 }
 
+.commercial-growth-control {
+  margin: 1.25rem 0 1rem;
+  padding: 0;
+}
+
+.commercial-growth-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.commercial-growth-header label {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.commercial-growth-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.commercial-growth-slider {
+  width: 100%;
+  margin: 0.25rem 0;
+  accent-color: var(--accent);
+}
+
+.commercial-growth-ticks {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+  text-align: center;
+}
+
+.commercial-growth-ticks span:first-child {
+  text-align: left;
+}
+
+.commercial-growth-ticks span:last-child {
+  text-align: right;
+}
+
+.tax-assumption-note {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+
 .tax-intro {
   margin-top: 0;
 }
@@ -750,6 +818,14 @@ a {
 .tax-table .num {
   text-align: right;
   white-space: nowrap;
+}
+
+.tax-col-note {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.3;
 }
 
 .tax-table-scenarios thead th.num {

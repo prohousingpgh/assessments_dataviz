@@ -2,11 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getParcel } from '../api'
 import type { CountySummary, Parcel, PropertyTaxes, TaxLine } from '../types'
+import { PageHeader } from '../components/PageHeader'
 import { TaxingBodyLabel, type TaxingBodyKind } from '../components/TaxingBodyLabel'
+import { usePageTitle } from '../hooks/usePageTitle'
+import { CommercialGrowthSlider } from '../components/CommercialGrowthSlider'
+import {
+  commercialGrowthRange,
+  defaultCommercialGrowthRate,
+  describeCommercialGrowthAssumption,
+} from '../commercialGrowth'
 import {
   formatJurisdictionName,
   formatMoney,
-  formatMoneyRange,
   formatNumber,
   formatPct,
 } from '../format'
@@ -16,30 +23,10 @@ import {
   homesteadExclusionsFromTaxes,
 } from '../homesteadExemption'
 import { applyParcelTaxAdjustments } from '../taxAdjustments'
-import type { TaxScenarioBreakdown } from '../types'
 
-const SCENARIO_LOW = 'commercial_low'
-const SCENARIO_ESTIMATE = 'baseline'
-const SCENARIO_HIGH = 'commercial_high'
-
-type ScenarioBounds = {
-  low: TaxScenarioBreakdown
-  estimate: TaxScenarioBreakdown
-  high: TaxScenarioBreakdown
-}
-
-function getScenarioBounds(taxes: PropertyTaxes): ScenarioBounds | null {
-  const scenarios = taxes.future_scenarios
-  if (!scenarios) return null
-  const low = scenarios[SCENARIO_LOW]
-  const estimate = scenarios[SCENARIO_ESTIMATE]
-  const high = scenarios[SCENARIO_HIGH]
-  if (!low || !estimate || !high) return null
-  return { low, estimate, high }
-}
-
-function hasCommercialRange(taxes: PropertyTaxes): boolean {
-  return getScenarioBounds(taxes) != null
+function hasCommercialSlider(taxes: PropertyTaxes): boolean {
+  const bases = taxes.revenue_neutral_bases
+  return Boolean(bases?.county || bases?.municipality || bases?.school)
 }
 
 export function ParcelPage() {
@@ -51,6 +38,38 @@ export function ParcelPage() {
   const [loading, setLoading] = useState(true)
   const [homesteadEnabled, setHomesteadEnabled] = useState(false)
   const [incomeBelow125Ami, setIncomeBelow125Ami] = useState(false)
+  const [commercialGrowth, setCommercialGrowth] = useState<number | null>(null)
+
+  useEffect(() => {
+    setCommercialGrowth(null)
+  }, [parcelId])
+
+  useEffect(() => {
+    if (taxes && commercialGrowth === null) {
+      setCommercialGrowth(defaultCommercialGrowthRate(taxes))
+    }
+  }, [taxes, commercialGrowth])
+
+  const residentialGrowth =
+    taxes?.parcel_residential_growth_rate ??
+    (parcel?.current_assessment_total && parcel.current_assessment_total > 0
+      ? ((parcel.new_assessment_total ?? 0) - parcel.current_assessment_total) /
+        parcel.current_assessment_total
+      : 0.2)
+
+  const growthRange = useMemo(
+    () => commercialGrowthRange(residentialGrowth),
+    [residentialGrowth]
+  )
+
+  const commercialGrowthRate =
+    commercialGrowth ?? growthRange.center
+
+  const commercialAssumptionNote = useMemo(
+    () =>
+      describeCommercialGrowthAssumption(commercialGrowthRate, residentialGrowth),
+    [commercialGrowthRate, residentialGrowth]
+  )
 
   const taxAdjustments = useMemo(() => {
     if (!taxes || !parcel) return null
@@ -59,9 +78,17 @@ export function ParcelPage() {
       parcel,
       homesteadEnabled,
       incomeBelow125Ami,
+      commercialGrowthRate,
       summary?.county_value_ratio
     )
-  }, [taxes, parcel, homesteadEnabled, incomeBelow125Ami, summary?.county_value_ratio])
+  }, [
+    taxes,
+    parcel,
+    homesteadEnabled,
+    incomeBelow125Ami,
+    commercialGrowthRate,
+    summary?.county_value_ratio,
+  ])
 
   const displayTaxes = taxAdjustments?.displayTaxes ?? null
   const incomeProtection = taxAdjustments?.income ?? null
@@ -87,6 +114,8 @@ export function ParcelPage() {
       .finally(() => setLoading(false))
   }, [parcelId])
 
+  usePageTitle(parcel?.address_display ?? 'Your home')
+
   if (loading) return <p className="page-meta">Loading your home…</p>
   if (error || !parcel) {
     return (
@@ -106,16 +135,19 @@ export function ParcelPage() {
 
   return (
     <div className="page">
-      <div className="parcel-header">
-        <h1>{parcel.address_display}</h1>
+      <PageHeader title={parcel.address_display} className="page-header--parcel">
         <p className="parcel-sub">
           {formatJurisdictionName(parcel.municipality)} ·{' '}
           {formatJurisdictionName(parcel.school_district)} school district · {parcel.use_description}
         </p>
         <p className="page-meta">Parcel {parcel.parcel_id}</p>
-      </div>
+      </PageHeader>
 
-      <SummaryStrip parcel={parcel} taxes={displayTaxes} bounds={displayTaxes ? getScenarioBounds(displayTaxes) : null} />
+      <SummaryStrip
+        parcel={parcel}
+        taxes={displayTaxes}
+        commercialAssumptionNote={commercialAssumptionNote}
+      />
 
       <div className="compare-grid">
         <section className="card">
@@ -195,13 +227,12 @@ export function ParcelPage() {
             </aside>
           )}
 
-          {hasCommercialRange(displayTaxes) && (
-            <aside className="callout callout-info">
-              Post-reassessment millage includes all existing commercial property. Because commercial
-              reassessment is not modeled, the <strong>estimated</strong> tax uses +20% commercial growth;
-              the range shows <strong>0%</strong> (low) through <strong>+40%</strong> (high). Residential
-              values use modeled reassessment.
-            </aside>
+          {hasCommercialSlider(taxes) && (
+            <CommercialGrowthSlider
+              range={growthRange}
+              value={commercialGrowthRate}
+              onChange={setCommercialGrowth}
+            />
           )}
 
           {taxes.warnings && taxes.warnings.length > 0 && (
@@ -212,79 +243,67 @@ export function ParcelPage() {
             </aside>
           )}
 
-          {(() => {
-            const bounds = getScenarioBounds(displayTaxes)
-            if (bounds) {
-              return (
-                <EstimatedRangeTaxTable
-                  taxes={displayTaxes}
-                  bounds={bounds}
-                  homesteadEnabled={homesteadEnabled}
-                  incomeCapped={incomeProtection?.countyCapped ?? false}
-                  uncappedCountyFuture={incomeProtection?.uncappedCountyFuture}
-                />
-              )
-            }
-            return (
-              <table className="tax-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Taxing body</th>
-                    <th scope="col" className="num">
-                      Today
-                    </th>
-                    <th scope="col" className="num">
-                      After reassessment
-                    </th>
-                    <th scope="col" className="num">
-                      Change
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <TaxRow
-                    kind="county"
-                    line={displayTaxes.current.county}
-                    future={displayTaxes.future.county}
-                    showTaxable={homesteadEnabled}
-                    cappedFrom={
-                      incomeProtection?.countyCapped
-                        ? incomeProtection.uncappedCountyFuture
-                        : undefined
-                    }
-                  />
-                  <TaxRow
-                    kind="municipality"
-                    line={displayTaxes.current.municipality}
-                    future={displayTaxes.future.municipality}
-                    showTaxable={homesteadEnabled}
-                  />
-                  <TaxRow
-                    kind="school"
-                    line={displayTaxes.current.school}
-                    future={displayTaxes.future.school}
-                    showTaxable={homesteadEnabled}
-                  />
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th scope="row">Total per year</th>
-                    <td className="num">{formatMoney(displayTaxes.current.total)}</td>
-                    <td className="num">{formatMoney(displayTaxes.future.total)}</td>
-                    <td className="num tax-delta">
-                      {formatMoney(displayTaxes.delta.total_dollars)}
-                      {displayTaxes.delta.total_percent != null && (
-                        <span className="tax-delta-pct">
-                          {' '}
-                          ({formatPct(displayTaxes.delta.total_percent)})
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            )
-          })()}
+          <table className="tax-table">
+            <thead>
+              <tr>
+                <th scope="col">Taxing body</th>
+                <th scope="col" className="num">
+                  Today
+                </th>
+                <th scope="col" className="num">
+                  After reassessment
+                </th>
+                <th scope="col" className="num">
+                  Change
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <TaxRow
+                kind="county"
+                line={displayTaxes.current.county}
+                future={displayTaxes.future.county}
+                showTaxable={homesteadEnabled}
+                cappedFrom={
+                  incomeProtection?.countyCapped
+                    ? incomeProtection.uncappedCountyFuture
+                    : undefined
+                }
+              />
+              <TaxRow
+                kind="municipality"
+                line={displayTaxes.current.municipality}
+                future={displayTaxes.future.municipality}
+                showTaxable={homesteadEnabled}
+              />
+              <TaxRow
+                kind="school"
+                line={displayTaxes.current.school}
+                future={displayTaxes.future.school}
+                showTaxable={homesteadEnabled}
+              />
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total per year</th>
+                <td className="num">{formatMoney(displayTaxes.current.total)}</td>
+                <td className="num">{formatMoney(displayTaxes.future.total)}</td>
+                <td className="num tax-delta">
+                  {formatMoney(displayTaxes.delta.total_dollars)}
+                  {displayTaxes.delta.total_percent != null && (
+                    <span className="tax-delta-pct">
+                      {' '}
+                      ({formatPct(displayTaxes.delta.total_percent)})
+                    </span>
+                  )}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          {hasCommercialSlider(taxes) && (
+            <p className="tax-assumption-note">{commercialAssumptionNote}</p>
+          )}
 
           {taxes.notes && (
             <ul className="bullet-list tax-notes">
@@ -318,7 +337,7 @@ export function ParcelPage() {
       <p className="page-actions">
         <Link to="/">Search another address</Link>
         {' · '}
-        <Link to="/assumptions">How we estimate</Link>
+        <Link to="/assumptions">Methodology & assumptions</Link>
       </p>
     </div>
   )
@@ -362,161 +381,14 @@ function HomesteadHelpText({
   )
 }
 
-function TaxAmountWithRange({
-  estimate,
-  low,
-  high,
-  showTaxable,
-  currentTaxable,
-  estimateTaxable,
-}: {
-  estimate: number
-  low: number
-  high: number
-  showTaxable?: boolean
-  currentTaxable?: number
-  estimateTaxable?: number
-}) {
-  const showRange = Math.abs(low - high) >= 0.01
-  return (
-    <>
-      <strong>{formatMoney(estimate)}</strong>
-      {showRange && <span className="tax-range-note">Range {formatMoneyRange(low, high)}</span>}
-      {showTaxable && currentTaxable != null && estimateTaxable != null && (
-        <span className="tax-mills-note">
-          Taxable {formatMoney(currentTaxable)} → {formatMoney(estimateTaxable)}
-        </span>
-      )}
-    </>
-  )
-}
-
-function EstimatedRangeTaxTable({
-  taxes,
-  bounds,
-  homesteadEnabled,
-  incomeCapped,
-  uncappedCountyFuture,
-}: {
-  taxes: PropertyTaxes
-  bounds: ScenarioBounds
-  homesteadEnabled: boolean
-  incomeCapped: boolean
-  uncappedCountyFuture?: number
-}) {
-  const { low, estimate, high } = bounds
-  const bodies: { key: 'county' | 'municipality' | 'school'; kind: TaxingBodyKind; label: string }[] = [
-    { key: 'county', kind: 'county', label: 'Allegheny County' },
-    { key: 'municipality', kind: 'municipality', label: taxes.current.municipality.label },
-    { key: 'school', kind: 'school', label: taxes.current.school.label },
-  ]
-
-  return (
-    <table className="tax-table">
-      <thead>
-        <tr>
-          <th scope="col">Taxing body</th>
-          <th scope="col" className="num">
-            Today
-          </th>
-          <th scope="col" className="num">
-            After reassessment (estimated)
-          </th>
-          <th scope="col" className="num">
-            Change
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {bodies.map(({ key, kind, label }) => {
-          const curLine = taxes.current[key]
-          const estLine = estimate[key]
-          const lowLine = low[key]
-          const highLine = high[key]
-          const cur = curLine.annual_tax
-          const est = estLine.annual_tax
-          const delta = est - cur
-          const millsNote = formatMillsNote(curLine.mills, null)
-          const futureMillsNote = formatMillsNote(estLine.mills, estLine)
-          const millsRangeNote = formatMillsRange(lowLine.mills, highLine.mills)
-          return (
-            <tr key={key}>
-              <th scope="row">
-                <TaxingBodyLabel kind={kind} name={label}>
-                  <span className="tax-mills-note">{millsNote}</span>
-                  {key === 'county' && incomeCapped && uncappedCountyFuture != null && (
-                    <span className="tax-cap-note">Income limit applied (county only)</span>
-                  )}
-                </TaxingBodyLabel>
-              </th>
-              <td className="num">{formatMoney(cur)}</td>
-              <td className="num">
-                <TaxAmountWithRange
-                  estimate={est}
-                  low={lowLine.annual_tax}
-                  high={highLine.annual_tax}
-                  showTaxable={homesteadEnabled}
-                  currentTaxable={curLine.taxable_value}
-                  estimateTaxable={estLine.taxable_value}
-                />
-                {!homesteadEnabled && (
-                  <span className="tax-mills-note">{futureMillsNote}</span>
-                )}
-                {millsRangeNote && (
-                  <span className="tax-range-note">Millage range {millsRangeNote}</span>
-                )}
-                {key === 'county' && uncappedCountyFuture != null && incomeCapped && (
-                  <span className="tax-mills-note">
-                    Uncapped estimate {formatMoney(uncappedCountyFuture)}
-                  </span>
-                )}
-              </td>
-              <td className="num">
-                <TaxAmountWithRange
-                  estimate={delta}
-                  low={low[key].annual_tax - cur}
-                  high={high[key].annual_tax - cur}
-                />
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-      <tfoot>
-        <tr>
-          <th scope="row">Total per year</th>
-          <td className="num">{formatMoney(taxes.current.total)}</td>
-          <td className="num">
-            <TaxAmountWithRange
-              estimate={estimate.total}
-              low={low.total}
-              high={high.total}
-            />
-          </td>
-          <td className="num tax-delta">
-            <TaxAmountWithRange
-              estimate={estimate.delta.total_dollars}
-              low={low.delta.total_dollars}
-              high={high.delta.total_dollars}
-            />
-            {estimate.delta.total_percent != null && (
-              <span className="tax-delta-pct"> ({formatPct(estimate.delta.total_percent)} est.)</span>
-            )}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-  )
-}
-
 function SummaryStrip({
   parcel,
   taxes,
-  bounds,
+  commercialAssumptionNote,
 }: {
   parcel: Parcel
   taxes: PropertyTaxes | null
-  bounds: ScenarioBounds | null
+  commercialAssumptionNote?: string
 }) {
   const valueDelta = parcel.value_change_dollars
   const valueDeltaPct = parcel.value_change_pct
@@ -555,20 +427,11 @@ function SummaryStrip({
           className="summary-cell-future-tax"
           label="Estimated taxes / year"
           value={taxes ? formatMoney(taxes.future.total) : '—'}
-          rangeNote={
-            bounds
-              ? `${formatMoneyRange(bounds.low.total, bounds.high.total)} (0%–40% commercial)`
-              : undefined
-          }
+          note={commercialAssumptionNote}
           delta={
             taxes?.delta.total_dollars != null ? formatMoney(taxes.delta.total_dollars) : undefined
           }
           deltaPct={taxes?.delta.total_percent ?? undefined}
-          deltaRangeNote={
-            bounds
-              ? formatMoneyRange(bounds.low.delta.total_dollars, bounds.high.delta.total_dollars)
-              : undefined
-          }
         />
       </div>
       <p className="summary-disclaimer">
@@ -582,18 +445,16 @@ function SummaryMetric({
   className,
   label,
   value,
-  rangeNote,
+  note,
   delta,
   deltaPct,
-  deltaRangeNote,
 }: {
   className?: string
   label: string
   value: string
-  rangeNote?: string
+  note?: string
   delta?: string
   deltaPct?: number | null
-  deltaRangeNote?: string
 }) {
   const showDelta = delta != null
 
@@ -609,14 +470,11 @@ function SummaryMetric({
       <span className="summary-metric-label">{label}</span>
       <span className="summary-metric-value">{value}</span>
       <div className="summary-metric-extra">
-        {rangeNote && <span className="summary-metric-range">{rangeNote}</span>}
+        {note && <span className="summary-metric-range">{note}</span>}
         {showDelta && (
           <span className={changeClass}>
             {delta}
             {deltaPct != null && !Number.isNaN(deltaPct) && ` (${formatPct(deltaPct)})`}
-            {deltaRangeNote && (
-              <span className="summary-metric-note"> · range {deltaRangeNote}</span>
-            )}
           </span>
         )}
       </div>
@@ -688,13 +546,3 @@ function formatMillsNote(
   return `${effective.toFixed(4)} mills`
 }
 
-function formatMillsRange(
-  a: number | null | undefined,
-  b: number | null | undefined
-): string | null {
-  if (a == null || b == null) return null
-  const min = Math.min(a, b)
-  const max = Math.max(a, b)
-  if (Math.abs(min - max) < 0.0001) return null
-  return `${min.toFixed(4)} – ${max.toFixed(4)}`
-}

@@ -1,18 +1,21 @@
+import { PageHeader } from '../components/PageHeader'
 import { SearchBox } from '../components/SearchBox'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const POLICY_ARTICLE_URL =
   'https://www.prohousingpgh.org/blog/policy-property-tax-assessments'
 
 export function HomePage() {
+  usePageTitle('Look up your home')
+
   return (
     <div className="page">
-      <section className="home-hero" aria-labelledby="home-hero-title">
-        <h1 id="home-hero-title">What could reassessment mean for your home?</h1>
+      <PageHeader title="Look up your home">
         <p className="lead">
           Enter your Allegheny County address to compare today&apos;s assessed value with modeled
           values if the county reassesses residential properties.
         </p>
-      </section>
+      </PageHeader>
 
       <section className="card panel">
         <SearchBox autoFocus />
@@ -52,21 +55,41 @@ export function HomePage() {
         </p>
 
         <h3>Stale assessments shift the burden unfairly</h3>
+        <p>
+          When the county does not reassess, the tax system stops treating similar properties alike.
+          People who buy, build, renovate, or move end up carrying more than their share — not because
+          they use more services, but because their assessments reflect today&apos;s market while
+          many long-held properties do not.
+        </p>
         <ul className="bullet-list">
           <li>
-            <strong>Newer homes and renovations</strong> often face higher effective tax rates than
-            long-owned properties assessed years ago at much lower values.
+            <strong>Young families</strong> buying a first home often pay taxes on a full market-value
+            assessment while neighbors in comparable houses pay on values frozen near 2012 levels.
           </li>
           <li>
-            That discourages new housing supply and tends to push costs onto{' '}
-            <strong>renters and new residents</strong>, while owners who successfully appeal
-            assessments are disproportionately wealthier.
+            <strong>Retirees downsizing</strong> sell at today&apos;s prices and buy smaller homes
+            assessed at current values, potentially spiking their costs while on fixed incomes.
           </li>
           <li>
-            <strong>Regular, accurate reassessment</strong> spreads the tax base more fairly across
-            properties at their current values.
+            <strong>Anyone who moves</strong> within the county — for work, family, accessibility, or
+            a fresh start — typically steps onto a higher effective tax rate than households that have
+            stayed put since the last reassessment.
+          </li>
+          <li>
+            <strong>New construction and renovations</strong> are discouraged because they pay higher
+            effective taxes than older homes of similar size and quality.
+          </li>
+          <li>
+            <strong>Renters and new residents</strong> feel this too: mobility and new investment are
+            punished, while staying under-assessed is rewarded. Wealthy homeowners are more likely to
+            appeal successfully and stay under-assessed for years or decades.
           </li>
         </ul>
+        <p>
+          That is not a fair way to fund schools, cities, and county services.{' '}
+          <strong>Regular, accurate reassessment</strong> does not invent new burdens out of thin air —
+          it aligns everyone&apos;s share with what property is actually worth today.
+        </p>
 
         <h3>Reassessment does not automatically mean higher taxes for everyone</h3>
         <p>

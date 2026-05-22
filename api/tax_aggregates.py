@@ -5,6 +5,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from api.commercial_scenarios import COUNTY_JURISDICTION_NAME, ESTIMATED_COMMERCIAL_GROWTH
+
 ROOT = Path(__file__).resolve().parents[1]
 AGGREGATES_PATH = ROOT / "data" / "tax_aggregates.json"
 
@@ -109,3 +111,114 @@ def get_revenue_neutral_factor(
 def clear_aggregate_cache() -> None:
     global _aggregates
     _aggregates = None
+
+
+def _jurisdiction_sums_from_db(
+    db: sqlite3.Connection,
+    scenario: str,
+    jurisdiction_type: str,
+    jurisdiction_name: str,
+) -> tuple[float, float] | None:
+    try:
+        row = db.execute(
+            """
+            SELECT current_taxable_sum, future_taxable_sum
+            FROM tax_jurisdiction_aggregates
+            WHERE scenario = ? AND jurisdiction_type = ? AND jurisdiction_name = ?
+            """,
+            (scenario, jurisdiction_type, jurisdiction_name),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if not row:
+        return None
+    return float(row[0] or 0), float(row[1] or 0)
+
+
+def _bases_from_aggregate_sums(
+    current_sum: float,
+    future_at_zero_growth: float,
+    future_at_reference_growth: float,
+    *,
+    reference_growth: float = ESTIMATED_COMMERCIAL_GROWTH,
+) -> dict[str, float]:
+    """Split jurisdiction future taxable into residential + commercial for any growth rate."""
+    if reference_growth > 0:
+        commercial_current = (future_at_reference_growth - future_at_zero_growth) / reference_growth
+        residential_future = future_at_zero_growth - commercial_current
+    else:
+        commercial_current = 0.0
+        residential_future = future_at_zero_growth
+    return {
+        "current_taxable_sum": current_sum,
+        "residential_future_taxable": residential_future,
+        "commercial_current_taxable": max(0.0, commercial_current),
+    }
+
+
+def _interpolation_factors(
+    aggregates: dict[str, Any],
+    jurisdiction_type: str,
+    jurisdiction_name: str,
+) -> dict[str, float] | None:
+    factors: dict[str, float] = {}
+    for scenario, growth in (
+        ("commercial_low", 0.0),
+        ("baseline", ESTIMATED_COMMERCIAL_GROWTH),
+        ("commercial_high", ESTIMATED_COMMERCIAL_GROWTH + 0.20),
+    ):
+        factor, meta = get_revenue_neutral_factor(
+            aggregates,
+            jurisdiction_type,
+            jurisdiction_name,
+            scenario=scenario,
+        )
+        if meta.get("found"):
+            factors[str(growth)] = factor
+    if len(factors) < 2:
+        return None
+    return factors
+
+
+def build_revenue_neutral_bases(
+    aggregates: dict[str, Any],
+    *,
+    municipality: str | None,
+    school_district: str | None,
+    db: sqlite3.Connection | None = None,
+) -> dict[str, Any]:
+    """
+    Per-taxing-body inputs for revenue-neutral millage at any commercial growth rate.
+
+    Prefer exact taxable sums from tax_jurisdiction_aggregates; otherwise expose
+    reference factors at 0% / +20% / +40% for client interpolation.
+    """
+    bodies: list[tuple[str, str, str]] = [
+        ("county", "county", COUNTY_JURISDICTION_NAME),
+        ("municipality", "municipality", (municipality or "").strip()),
+        ("school", "school_district", (school_district or "").strip()),
+    ]
+    out: dict[str, Any] = {
+        "reference_commercial_growth": ESTIMATED_COMMERCIAL_GROWTH,
+    }
+    for key, jtype, jname in bodies:
+        if not jname:
+            continue
+        entry: dict[str, Any] = {"jurisdiction_type": jtype, "jurisdiction_name": jname}
+        if db is not None:
+            low = _jurisdiction_sums_from_db(db, "commercial_low", jtype, jname)
+            base = _jurisdiction_sums_from_db(db, "baseline", jtype, jname)
+            if low and base:
+                cur = low[0] if low[0] > 0 else base[0]
+                entry.update(
+                    _bases_from_aggregate_sums(cur, low[1], base[1]),
+                )
+                entry["method"] = "sums"
+                out[key] = entry
+                continue
+        interp = _interpolation_factors(aggregates, jtype, jname)
+        if interp:
+            entry["method"] = "interpolation"
+            entry["factors_by_growth"] = interp
+            out[key] = entry
+    return out

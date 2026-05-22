@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PageHeader } from '../components/PageHeader'
 import { getHomesteadExemptions, type HomesteadExemptionsTable } from '../api'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { formatMoney } from '../format'
 
 export function HomesteadExemptionsPage() {
+  usePageTitle('Homestead exclusions')
   const [data, setData] = useState<HomesteadExemptionsTable | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
@@ -31,13 +34,13 @@ export function HomesteadExemptionsPage() {
 
   return (
     <div className="page">
-      <h1>Homestead exclusion reference</h1>
-      <p className="lead">
-        Act 50 homestead exclusions reduce <strong>taxable assessed value</strong> before millage is
-        applied. This table lists the dollar amounts used in tax estimates on this site for tax year{' '}
-        {data.tax_year ?? 2025}. See also{' '}
-        <Link to="/assumptions">How we estimate</Link>.
-      </p>
+      <PageHeader title="Homestead exclusions">
+        <p className="lead">
+          Act 50 homestead exclusions reduce <strong>taxable assessed value</strong> before millage is
+          applied. Dollar amounts used in tax estimates for tax year {data.tax_year ?? 2025}. See also{' '}
+          <Link to="/assumptions">Methodology & assumptions</Link>.
+        </p>
+      </PageHeader>
 
       <section className="card">
         <h2>County (all parcels)</h2>
