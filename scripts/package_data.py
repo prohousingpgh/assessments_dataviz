@@ -50,6 +50,10 @@ def main() -> None:
             path = DATA_DIR / name
             zf.write(path, arcname=name)
             print(f"  + {name} ({path.stat().st_size / 1_048_576:.1f} MB)")
+        pmtiles = DATA_DIR / "parcels.pmtiles"
+        if pmtiles.is_file():
+            zf.write(pmtiles, arcname="parcels.pmtiles")
+            print(f"  + parcels.pmtiles ({pmtiles.stat().st_size / 1_048_576:.1f} MB)")
 
     size_mb = args.output.stat().st_size / 1_048_576
     print(f"Wrote {args.output} ({size_mb:.1f} MB)")

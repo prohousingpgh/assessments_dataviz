@@ -935,3 +935,67 @@ a {
   color: var(--brand);
   margin-top: 0.2rem;
 }
+
+.page--map {
+  max-width: 1100px;
+}
+
+.map-shell {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(26, 31, 38, 0.06);
+}
+
+.parcel-map {
+  width: 100%;
+  height: min(68vh, 560px);
+  min-height: 360px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 1rem 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.map-legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid rgba(26, 31, 38, 0.12);
+  flex-shrink: 0;
+}
+
+.map-help {
+  margin-top: 0.25rem;
+}
+
+.map-unavailable .code-block {
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.maplibregl-popup.map-popup .maplibregl-popup-content {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(26, 31, 38, 0.15);
+}

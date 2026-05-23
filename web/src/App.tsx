@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { AssumptionsPage } from './pages/AssumptionsPage'
 import { HomesteadExemptionsPage } from './pages/HomesteadExemptionsPage'
 import { HomePage } from './pages/HomePage'
+import { MapPage } from './pages/MapPage'
 import { ParcelPage } from './pages/ParcelPage'
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="map" element={<MapPage />} />
           <Route path="home/:parcelId" element={<ParcelPage />} />
           <Route path="assumptions" element={<AssumptionsPage />} />
           <Route path="homestead-exemptions" element={<HomesteadExemptionsPage />} />

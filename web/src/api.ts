@@ -1,3 +1,4 @@
+import type { MapConfig, MapParcelCollection } from './map/types'
 import type { CountySummary, Manifest, Parcel, PropertyTaxes, SearchResult } from './types'
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -23,6 +24,27 @@ export function getParcel(parcelId: string): Promise<{
 
 export function getManifest(): Promise<Manifest> {
   return fetchJson('/api/manifest')
+}
+
+export function getMapConfig(): Promise<MapConfig> {
+  return fetchJson('/api/map/config')
+}
+
+export function getMapParcels(params: {
+  west: number
+  south: number
+  east: number
+  north: number
+  limit?: number
+}): Promise<MapParcelCollection> {
+  const query = new URLSearchParams({
+    west: String(params.west),
+    south: String(params.south),
+    east: String(params.east),
+    north: String(params.north),
+    limit: String(params.limit ?? 6000),
+  })
+  return fetchJson(`/api/map/parcels?${query}`)
 }
 
 export type HomesteadExemptionEntry = {

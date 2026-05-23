@@ -96,5 +96,5 @@ Uses 2025 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`,
 
 - [x] Property tax estimates (millage tables)
 - [x] Single-server production deploy (Docker + Fly.io + GitHub Actions)
-- [ ] Neighborhood map (vector tiles from `predictions.parquet`)
+- [ ] Neighborhood map (vector tiles from `predictions.parquet`; centroid map + PMTiles build scripts in repo)
 - [ ] Automated data bundle from agc_assessments CI

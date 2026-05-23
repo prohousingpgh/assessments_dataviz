@@ -117,6 +117,39 @@ def load_assessment_fields(assessments_path: Path) -> pd.DataFrame:
     ].drop_duplicates("parcel_id")
 
 
+def load_centroids(centroids_path: Path) -> pd.DataFrame:
+    """WPRDC parcel centroids CSV (PARID + lon/lat)."""
+    df = pd.read_csv(centroids_path, dtype=str, low_memory=False)
+    cols = {c.upper(): c for c in df.columns}
+    parcel_col = cols.get("PARID") or cols.get("PARCEL_ID") or cols.get("PIN")
+    if not parcel_col:
+        raise ValueError(f"No PARID/PIN column in {centroids_path}")
+
+    lon_col = None
+    lat_col = None
+    for candidate in ("LON", "LONG", "LONGITUDE", "X", "CENTROID_X"):
+        if candidate in cols:
+            lon_col = cols[candidate]
+            break
+    for candidate in ("LAT", "LATITUDE", "Y", "CENTROID_Y"):
+        if candidate in cols:
+            lat_col = cols[candidate]
+            break
+    if not lon_col or not lat_col:
+        raise ValueError(
+            f"No lon/lat columns found in {centroids_path} (expected LON/LAT or LONGITUDE/LATITUDE)"
+        )
+
+    out = pd.DataFrame(
+        {
+            "parcel_id": df[parcel_col].astype(str).str.strip(),
+            "lon": pd.to_numeric(df[lon_col], errors="coerce"),
+            "lat": pd.to_numeric(df[lat_col], errors="coerce"),
+        }
+    )
+    return out.drop_duplicates("parcel_id")
+
+
 def load_predictions(predictions_path: Path) -> pd.DataFrame:
     df = pd.read_csv(predictions_path, dtype=str, low_memory=False)
     rename = {
@@ -322,6 +355,7 @@ def build_db(
     assessments_path: Path | None,
     db_path: Path,
     commercial_path: Path | None = None,
+    centroids_path: Path | None = None,
 ) -> None:
     preds = load_predictions(predictions_path)
 
@@ -333,6 +367,14 @@ def build_db(
         df = preds.copy()
         df["address_display"] = df["municipality"] + " · Parcel " + df["parcel_id"]
         df["address_search"] = df["address_display"].str.lower()
+
+    if centroids_path and centroids_path.exists():
+        centroids = load_centroids(centroids_path)
+        df = df.merge(centroids, on="parcel_id", how="left")
+        matched = int(df["lon"].notna().sum())
+        print(f"Matched {matched:,} / {len(df):,} parcels with map centroids")
+    elif centroids_path:
+        print(f"Warning: centroids file not found at {centroids_path}", file=sys.stderr)
 
     df = df[df["address_search"].notna() & (df["address_search"] != "")]
 
@@ -368,6 +410,10 @@ def build_db(
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_parcels_id ON parcels(parcel_id)"
     )
+    if "lon" in df.columns and "lat" in df.columns:
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_parcels_geo ON parcels(lon, lat)"
+        )
     conn.commit()
 
     write_manifest(conn, predictions_path, len(df), assessments_path)
@@ -402,11 +448,20 @@ def main() -> None:
         default=DEFAULT_COMMERCIAL,
         help="Commercial current valuations CSV for revenue-neutral millage scenarios",
     )
+    parser.add_argument(
+        "--centroids",
+        type=Path,
+        default=None,
+        help="WPRDC parcel centroids CSV (PARID, lon, lat) for the neighborhood map",
+    )
     args = parser.parse_args()
     commercial = args.commercial if args.commercial and args.commercial.exists() else None
     if args.commercial and not commercial:
         print(f"Warning: commercial file not found at {args.commercial}", file=sys.stderr)
-    build_db(args.predictions, args.assessments, args.db, commercial)
+    centroids = args.centroids if args.centroids and args.centroids.exists() else None
+    if args.centroids and not centroids:
+        print(f"Warning: centroids file not found at {args.centroids}", file=sys.stderr)
+    build_db(args.predictions, args.assessments, args.db, commercial, centroids)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ import logo from '../assets/logo_white.webp'
 
 const nav = [
   { to: '/', label: 'Look up your home' },
+  { to: '/map', label: 'Neighborhood map' },
   { to: '/assumptions', label: 'Methodology' },
 ]
 
@@ -28,7 +29,7 @@ export function Layout() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={pathname === item.to ? 'nav-link active' : 'nav-link'}
+                className={pathname === item.to || (item.to !== '/' && pathname.startsWith(item.to)) ? 'nav-link active' : 'nav-link'}
               >
                 {item.label}
               </Link>

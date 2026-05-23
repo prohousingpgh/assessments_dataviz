@@ -152,7 +152,10 @@ export function ParcelPage() {
           {formatJurisdictionName(parcel.municipality)} ·{' '}
           {formatJurisdictionName(parcel.school_district)} school district · {parcel.use_description}
         </p>
-        <p className="page-meta">Parcel {parcel.parcel_id}</p>
+        <p className="page-meta">
+          Parcel {parcel.parcel_id} ·{' '}
+          <Link to={`/map?parcel=${encodeURIComponent(parcel.parcel_id)}`}>View on map</Link>
+        </p>
       </PageHeader>
 
       <SummaryStrip

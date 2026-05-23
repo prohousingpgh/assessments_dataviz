@@ -10,6 +10,7 @@ from api.config import CORS_ORIGINS
 from api.db import get_connection, get_parcel, get_summary_stats, load_manifest, search_parcels
 from api.static_files import install_static_files
 from api.homestead_data import list_homestead_table
+from api.map_routes import router as map_router
 from api.tax import compute_property_taxes, set_tax_db_connection
 from api.tax_aggregates import clear_aggregate_cache
 
@@ -66,6 +67,9 @@ def manifest() -> dict[str, Any]:
 @app.get("/api/homestead-exemptions")
 def homestead_exemptions() -> dict[str, Any]:
     return list_homestead_table()
+
+
+app.include_router(map_router)
 
 
 install_static_files(app)
