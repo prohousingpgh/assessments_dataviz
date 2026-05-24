@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 from api.config import CORS_ORIGINS
 from api.db import get_connection, get_parcel, get_summary_stats, load_manifest, search_parcels
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Allegheny Home Assessment Explorer API", lifespan=lifespan)
 
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,

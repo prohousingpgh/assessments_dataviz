@@ -137,6 +137,21 @@ function bindParcelInteractions(
   })
 }
 
+function padBounds(bounds: maplibregl.LngLatBounds, fraction: number) {
+  const west = bounds.getWest()
+  const east = bounds.getEast()
+  const south = bounds.getSouth()
+  const north = bounds.getNorth()
+  const padLon = (east - west) * fraction
+  const padLat = (north - south) * fraction
+  return {
+    west: west - padLon,
+    east: east + padLon,
+    south: south - padLat,
+    north: north + padLat,
+  }
+}
+
 export function ParcelMap({
   config,
   highlightParcelId,
@@ -145,6 +160,8 @@ export function ParcelMap({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const loadTimerRef = useRef<number | null>(null)
+  const loadGenerationRef = useRef(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (!containerRef.current || config.mode === 'unavailable') return
@@ -197,19 +214,32 @@ export function ParcelMap({
         addParcelLayers(map, config, 'parcels')
 
         const loadViewport = () => {
-          const bounds = map.getBounds()
-          getMapParcels({
-            west: bounds.getWest(),
-            south: bounds.getSouth(),
-            east: bounds.getEast(),
-            north: bounds.getNorth(),
-          })
+          const generation = ++loadGenerationRef.current
+          abortRef.current?.abort()
+          const controller = new AbortController()
+          abortRef.current = controller
+
+          const bounds = padBounds(map.getBounds(), 0.15)
+          const zoom = map.getZoom()
+
+          getMapParcels(
+            {
+              west: bounds.west,
+              south: bounds.south,
+              east: bounds.east,
+              north: bounds.north,
+              zoom,
+            },
+            controller.signal
+          )
             .then((collection) => {
-              const source = map.getSource('parcels') as maplibregl.GeoJSONSource
-              source.setData(collection)
+              if (generation !== loadGenerationRef.current) return
+              const source = map.getSource('parcels') as maplibregl.GeoJSONSource | undefined
+              source?.setData(collection)
             })
-            .catch(() => {
-              /* ignore transient fetch errors while panning */
+            .catch((err: unknown) => {
+              if (err instanceof DOMException && err.name === 'AbortError') return
+              if (generation !== loadGenerationRef.current) return
             })
         }
 
@@ -217,11 +247,12 @@ export function ParcelMap({
           if (loadTimerRef.current != null) {
             window.clearTimeout(loadTimerRef.current)
           }
-          loadTimerRef.current = window.setTimeout(loadViewport, 200)
+          loadTimerRef.current = window.setTimeout(loadViewport, 120)
         }
 
         loadViewport()
         map.on('moveend', scheduleLoad)
+        map.on('zoomend', scheduleLoad)
       }
 
       bindParcelInteractions(map, onParcelSelect)
@@ -231,6 +262,8 @@ export function ParcelMap({
       if (loadTimerRef.current != null) {
         window.clearTimeout(loadTimerRef.current)
       }
+      abortRef.current?.abort()
+      loadGenerationRef.current += 1
       map.remove()
       mapRef.current = null
     }

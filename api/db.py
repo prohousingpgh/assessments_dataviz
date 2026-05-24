@@ -16,8 +16,14 @@ def get_connection() -> sqlite3.Connection:
         raise FileNotFoundError(
             f"Database not found at {DB_PATH}. Run: python scripts/build_db.py --predictions <csv> --assessments <csv>"
         )
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # Read-heavy production tuning for faster cold queries on Fly.io.
+    conn.execute("PRAGMA query_only = ON")
+    conn.execute("PRAGMA mmap_size = 268435456")
+    conn.execute("PRAGMA cache_size = -131072")
+    conn.execute("PRAGMA temp_store = MEMORY")
+    conn.execute("PRAGMA synchronous = OFF")
     return conn
 
 

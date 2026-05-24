@@ -30,21 +30,35 @@ export function getMapConfig(): Promise<MapConfig> {
   return fetchJson('/api/map/config')
 }
 
-export function getMapParcels(params: {
-  west: number
-  south: number
-  east: number
-  north: number
-  limit?: number
-}): Promise<MapParcelCollection> {
+export async function getMapParcels(
+  params: {
+    west: number
+    south: number
+    east: number
+    north: number
+    zoom?: number
+    limit?: number
+  },
+  signal?: AbortSignal
+): Promise<MapParcelCollection> {
   const query = new URLSearchParams({
     west: String(params.west),
     south: String(params.south),
     east: String(params.east),
     north: String(params.north),
-    limit: String(params.limit ?? 6000),
   })
-  return fetchJson(`/api/map/parcels?${query}`)
+  if (params.zoom != null) {
+    query.set('zoom', String(params.zoom))
+  }
+  if (params.limit != null) {
+    query.set('limit', String(params.limit))
+  }
+  const res = await fetch(`/api/map/parcels?${query}`, { signal })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(body || res.statusText)
+  }
+  return res.json() as Promise<MapParcelCollection>
 }
 
 export type HomesteadExemptionEntry = {

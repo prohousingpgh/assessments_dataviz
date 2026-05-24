@@ -80,6 +80,31 @@ def _parcel_count(conn: sqlite3.Connection) -> int:
     return int(row["n"]) if row else 0
 
 
+def _sample_stride(zoom: float) -> int:
+    """Thin parcels at low zoom so dots stay evenly distributed, not a random 6k slice."""
+    if zoom >= 14:
+        return 1
+    if zoom >= 13:
+        return 2
+    if zoom >= 12:
+        return 4
+    if zoom >= 11:
+        return 8
+    if zoom >= 10:
+        return 16
+    return 32
+
+
+def _limit_for_zoom(zoom: float) -> int:
+    if zoom >= 14:
+        return 12_000
+    if zoom >= 13:
+        return 10_000
+    if zoom >= 12:
+        return 8_000
+    return 6_000
+
+
 def map_parcels_geojson(
     conn: sqlite3.Connection,
     *,
@@ -87,27 +112,50 @@ def map_parcels_geojson(
     south: float,
     east: float,
     north: float,
-    limit: int = 6000,
+    limit: int | None = None,
+    zoom: float | None = None,
 ) -> dict[str, Any]:
     if not has_parcel_centroids(conn):
         return {"type": "FeatureCollection", "features": []}
 
-    if west >  east or south > north:
+    if west > east or south > north:
         return {"type": "FeatureCollection", "features": []}
 
-    limit = max(1, min(limit, 12_000))
-    rows = conn.execute(
-        """
-        SELECT parcel_id, lon, lat, value_change_pct, address_display, municipality
-        FROM parcels
-        WHERE lon IS NOT NULL
-          AND lat IS NOT NULL
-          AND lon BETWEEN ? AND ?
-          AND lat BETWEEN ? AND ?
-        LIMIT ?
-        """,
-        (west, east, south, north, limit),
-    ).fetchall()
+    z = 12.0 if zoom is None else float(zoom)
+    cap = _limit_for_zoom(z) if limit is None else max(1, min(limit, 12_000))
+    stride = _sample_stride(z)
+
+    if stride <= 1:
+        rows = conn.execute(
+            """
+            SELECT parcel_id, lon, lat, value_change_pct, address_display, municipality
+            FROM parcels
+            WHERE lon IS NOT NULL
+              AND lat IS NOT NULL
+              AND lon BETWEEN ? AND ?
+              AND lat BETWEEN ? AND ?
+            ORDER BY lat, lon
+            LIMIT ?
+            """,
+            (west, east, south, north, cap),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """
+            SELECT parcel_id, lon, lat, value_change_pct, address_display, municipality
+            FROM parcels
+            WHERE lon IS NOT NULL
+              AND lat IS NOT NULL
+              AND lon BETWEEN ? AND ?
+              AND lat BETWEEN ? AND ?
+              AND (
+                abs(CAST(lon * 100000 AS INTEGER) * 31 + CAST(lat * 100000 AS INTEGER)) % ?
+              ) = 0
+            ORDER BY lat, lon
+            LIMIT ?
+            """,
+            (west, east, south, north, stride, cap),
+        ).fetchall()
 
     features: list[dict[str, Any]] = []
     for row in rows:
@@ -127,7 +175,16 @@ def map_parcels_geojson(
                 },
             }
         )
-    return {"type": "FeatureCollection", "features": features}
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "meta": {
+            "returned": len(features),
+            "limit": cap,
+            "zoom": z,
+            "sample_stride": stride,
+        },
+    }
 
 
 def map_parcel_feature(conn: sqlite3.Connection, parcel_id: str) -> dict[str, Any] | None:

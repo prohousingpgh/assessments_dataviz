@@ -32,7 +32,8 @@ def get_map_parcels(
     south: float = Query(..., description="Bounding box south latitude"),
     east: float = Query(..., description="Bounding box east longitude"),
     north: float = Query(..., description="Bounding box north latitude"),
-    limit: int = Query(6000, ge=1, le=12000),
+    zoom: float | None = Query(None, ge=0, le=22, description="Map zoom for adaptive sampling"),
+    limit: int | None = Query(None, ge=1, le=12000),
 ) -> dict[str, Any]:
     return map_parcels_geojson(
         _db(request),
@@ -41,6 +42,7 @@ def get_map_parcels(
         east=east,
         north=north,
         limit=limit,
+        zoom=zoom,
     )
 
 

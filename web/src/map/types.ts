@@ -37,4 +37,10 @@ export type MapParcelFeature = {
 export type MapParcelCollection = {
   type: 'FeatureCollection'
   features: MapParcelFeature[]
+  meta?: {
+    returned: number
+    limit: number
+    zoom: number
+    sample_stride: number
+  }
 }
