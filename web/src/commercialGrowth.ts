@@ -8,6 +8,9 @@ import type {
 } from './types'
 
 const REFERENCE_GROWTH = 0.2
+/** Commercial growth slider endpoints (decimal): +20% … +360%. */
+const COMMERCIAL_GROWTH_MIN = 0.2
+const COMMERCIAL_GROWTH_MAX = 3.6
 
 export type CommercialGrowthRange = {
   /** Countywide average residential growth — slider midpoint (decimal, ≥ 0). */
@@ -59,7 +62,7 @@ export function countyAverageResidentialGrowth(
   return REFERENCE_GROWTH
 }
 
-/** Symmetric range around countywide average residential growth (slider center). */
+/** Fixed commercial range with countywide average residential growth at the slider midpoint. */
 export function commercialGrowthRange(
   countyAvgResidentialGrowth: number,
   parcelResidentialGrowth?: number | null
@@ -70,13 +73,10 @@ export function commercialGrowthRange(
       ? countyAvgResidentialGrowth
       : REFERENCE_GROWTH
   )
-  const halfSpan = Math.max(0.15, center * 0.5, 0.2)
-  const min = Math.max(0, center - halfSpan)
-  const max = center + halfSpan
   const range: CommercialGrowthRange = {
     center,
-    min,
-    max: Math.max(max, center),
+    min: COMMERCIAL_GROWTH_MIN,
+    max: COMMERCIAL_GROWTH_MAX,
   }
   if (
     parcelResidentialGrowth != null &&
