@@ -455,6 +455,34 @@ a {
   margin: 0.25rem 0 0.75rem;
 }
 
+.headline-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin: 0.2rem 0 0.8rem;
+}
+
+.headline-metric {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.headline-label {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.headline-metric .stat-value {
+  margin: 0.15rem 0 0;
+  line-height: 1.15;
+}
+
 .delta-line {
   font-weight: 600;
   margin: 0 0 0.5rem;

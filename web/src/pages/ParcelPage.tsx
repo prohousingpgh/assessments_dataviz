@@ -158,16 +158,19 @@ export function ParcelPage() {
         </p>
       </PageHeader>
 
-      <SummaryStrip
-        parcel={parcel}
-        taxes={displayTaxes}
-        commercialAssumptionNote={commercialAssumptionNote}
-      />
-
       <div className="compare-grid">
         <section className="card">
           <h2>Assessed value today</h2>
-          <p className="stat-value">{formatMoney(parcel.current_assessment_total)}</p>
+          <div className="headline-metrics">
+            <div className="headline-metric">
+              <p className="headline-label">Assessed value</p>
+              <p className="stat-value">{formatMoney(parcel.current_assessment_total)}</p>
+            </div>
+            <div className="headline-metric">
+              <p className="headline-label">Estimated taxes / year</p>
+              <p className="stat-value">{displayTaxes ? formatMoney(displayTaxes.current.total) : '—'}</p>
+            </div>
+          </div>
           <dl className="detail-list">
             <div>
               <dt>Land</dt>
@@ -184,14 +187,41 @@ export function ParcelPage() {
         </section>
 
         <section className="card card-accent">
-          <h2>If reassessment happens (modeled)</h2>
-          <p className="stat-value">{formatMoney(parcel.new_assessment_total)}</p>
-          <p className="delta-line">
-            Change: {formatMoney(parcel.value_change_dollars)} ({formatPct(parcel.value_change_pct)})
-          </p>
+          <h2>After reassessment value (modeled)</h2>
+          <div className="headline-metrics">
+            <div className="headline-metric">
+              <p className="headline-label">Assessed value</p>
+              <p className="stat-value">{formatMoney(parcel.new_assessment_total)}</p>
+            </div>
+            <div className="headline-metric">
+              <p className="headline-label">Estimated taxes / year</p>
+              <p className="stat-value">{displayTaxes ? formatMoney(displayTaxes.future.total) : '—'}</p>
+            </div>
+          </div>
+          <dl className="detail-list">
+            <div>
+              <dt>Change in assessed value</dt>
+              <dd>
+                {formatMoney(parcel.value_change_dollars)} ({formatPct(parcel.value_change_pct)})
+              </dd>
+            </div>
+            {displayTaxes && (
+              <div>
+                <dt>Tax change / year</dt>
+                <dd>
+                  {formatMoney(displayTaxes.delta.total_dollars)}
+                  {displayTaxes.delta.total_percent != null &&
+                    ` (${formatPct(displayTaxes.delta.total_percent)})`}
+                </dd>
+              </div>
+            )}
+          </dl>
           <p className="detail-foot">
             Based on recent sales and property characteristics (OpenAvmKit ensemble model).
           </p>
+          {taxes && hasCommercialSlider(taxes) && (
+            <p className="detail-foot">{commercialAssumptionNote}</p>
+          )}
         </section>
       </div>
 
@@ -400,107 +430,6 @@ function HomesteadHelpText({
       <Link to="/homestead-exemptions">Full reference table</Link>. County uses county assessed value;
       city and school use local assessed value.
     </p>
-  )
-}
-
-function SummaryStrip({
-  parcel,
-  taxes,
-  commercialAssumptionNote,
-}: {
-  parcel: Parcel
-  taxes: PropertyTaxes | null
-  commercialAssumptionNote?: string
-}) {
-  const valueDelta = parcel.value_change_dollars
-  const valueDeltaPct = parcel.value_change_pct
-
-  return (
-    <section className="summary-strip" aria-label="Assessment and tax summary">
-      <h2 className="summary-strip-title">At a glance</h2>
-      <div className="summary-strip-grid">
-        <p className="summary-group-label summary-cell-today-head">Today</p>
-        <div className="summary-arrow" aria-hidden="true">
-          →
-        </div>
-        <p className="summary-group-label summary-group-label-future summary-cell-future-head">
-          If reassessment happens
-        </p>
-
-        <SummaryMetric
-          className="summary-cell-today-value"
-          label="Assessed value"
-          value={formatMoney(parcel.current_assessment_total)}
-        />
-        <SummaryMetric
-          className="summary-cell-future-value"
-          label="Assessed value"
-          value={formatMoney(parcel.new_assessment_total)}
-          delta={valueDelta != null ? formatMoney(valueDelta) : undefined}
-          deltaPct={valueDeltaPct}
-        />
-
-        <SummaryMetric
-          className="summary-cell-today-tax"
-          label="Estimated taxes / year"
-          value={taxes ? formatMoney(taxes.current.total) : '—'}
-        />
-        <SummaryMetric
-          className="summary-cell-future-tax"
-          label="Estimated taxes / year"
-          value={taxes ? formatMoney(taxes.future.total) : '—'}
-          note={commercialAssumptionNote}
-          delta={
-            taxes?.delta.total_dollars != null ? formatMoney(taxes.delta.total_dollars) : undefined
-          }
-          deltaPct={taxes?.delta.total_percent ?? undefined}
-        />
-      </div>
-      <p className="summary-disclaimer">
-        Illustrative estimate only. Not a county reassessment notice or tax bill.
-      </p>
-    </section>
-  )
-}
-
-function SummaryMetric({
-  className,
-  label,
-  value,
-  note,
-  delta,
-  deltaPct,
-}: {
-  className?: string
-  label: string
-  value: string
-  note?: string
-  delta?: string
-  deltaPct?: number | null
-}) {
-  const showDelta = delta != null
-
-  const changeClass =
-    deltaPct != null && deltaPct > 0
-      ? 'summary-metric-change up'
-      : deltaPct != null && deltaPct < 0
-        ? 'summary-metric-change down'
-        : 'summary-metric-change'
-
-  return (
-    <div className={className ? `summary-metric ${className}` : 'summary-metric'}>
-      <span className="summary-metric-label">{label}</span>
-      <span className="summary-metric-value">{value}</span>
-      <div className="summary-metric-extra">
-        {note && <span className="summary-metric-range">{note}</span>}
-        {showDelta && (
-          <span className={changeClass}>
-            {delta}
-            {deltaPct != null && !Number.isNaN(deltaPct) && ` (${formatPct(deltaPct)})`}
-          </span>
-        )}
-      </div>
-    </div>
   )
 }
 
