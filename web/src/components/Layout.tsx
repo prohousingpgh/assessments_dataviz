@@ -2,8 +2,8 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import logo from '../assets/logo_white.webp'
 
 const nav = [
-  { to: '/', label: 'Look up your home' },
-  { to: '/map', label: 'Neighborhood map' },
+  { to: '/', label: 'Search' },
+  { to: '/map', label: 'Map' },
   { to: '/assumptions', label: 'Methodology' },
 ]
 
@@ -37,7 +37,7 @@ export function Layout() {
           </nav>
         </div>
         <p className="site-tagline">
-          Illustrative reassessment estimates for Allegheny County homeowners
+          Reassessment estimates for Allegheny County homeowners
         </p>
       </header>
       <main className="main-content">
