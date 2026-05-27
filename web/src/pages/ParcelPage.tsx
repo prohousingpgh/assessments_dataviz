@@ -258,7 +258,7 @@ export function ParcelPage() {
             </aside>
           )}
 
-          <table className="tax-table">
+          <table className="tax-table tax-table-breakdown">
             <thead>
               <tr>
                 <th scope="col">Taxing body</th>
@@ -301,16 +301,23 @@ export function ParcelPage() {
             <tfoot>
               <tr>
                 <th scope="row">Total per year</th>
-                <td className="num">{formatMoney(displayTaxes.current.total)}</td>
-                <td className="num">{formatMoney(displayTaxes.future.total)}</td>
-                <td className="num tax-delta">
-                  {formatMoney(displayTaxes.delta.total_dollars)}
-                  {displayTaxes.delta.total_percent != null && (
-                    <span className="tax-delta-pct">
-                      {' '}
-                      ({formatPct(displayTaxes.delta.total_percent)})
+                <td className="num" data-label="Today">
+                  <span className="tax-cell-value">{formatMoney(displayTaxes.current.total)}</span>
+                </td>
+                <td className="num" data-label="After reassessment">
+                  <span className="tax-cell-value">{formatMoney(displayTaxes.future.total)}</span>
+                </td>
+                <td className="num tax-delta" data-label="Change">
+                  <div className="tax-cell-stack">
+                    <span className="tax-cell-value">
+                      {formatMoney(displayTaxes.delta.total_dollars)}
                     </span>
-                  )}
+                    {displayTaxes.delta.total_percent != null && (
+                      <span className="tax-delta-pct">
+                        ({formatPct(displayTaxes.delta.total_percent)})
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             </tfoot>
@@ -524,24 +531,30 @@ function TaxRow({
           )}
         </TaxingBodyLabel>
       </th>
-      <td className="num">{formatMoney(line.annual_tax)}</td>
-      <td className="num">
-        {formatMoney(future.annual_tax)}
-        {showTaxable && (
-          <span className="tax-mills-note">
-            Taxable {formatMoney(line.taxable_value)} → {formatMoney(future.taxable_value)}
-          </span>
-        )}
-        {cappedFrom != null && (
-          <span className="tax-mills-note">
-            Uncapped estimate {formatMoney(cappedFrom)}
-          </span>
-        )}
-        {cappedFrom == null && !showTaxable && futureMillsNote !== millsNote && (
-          <span className="tax-mills-note">{futureMillsNote}</span>
-        )}
+      <td className="num" data-label="Today">
+        <span className="tax-cell-value">{formatMoney(line.annual_tax)}</span>
       </td>
-      <td className="num">{formatMoney(delta)}</td>
+      <td className="num" data-label="After reassessment">
+        <div className="tax-cell-stack">
+          <span className="tax-cell-value">{formatMoney(future.annual_tax)}</span>
+          {showTaxable && (
+            <span className="tax-mills-note">
+              Taxable {formatMoney(line.taxable_value)} → {formatMoney(future.taxable_value)}
+            </span>
+          )}
+          {cappedFrom != null && (
+            <span className="tax-mills-note">
+              Uncapped estimate {formatMoney(cappedFrom)}
+            </span>
+          )}
+          {cappedFrom == null && !showTaxable && futureMillsNote !== millsNote && (
+            <span className="tax-mills-note">{futureMillsNote}</span>
+          )}
+        </div>
+      </td>
+      <td className="num" data-label="Change">
+        <span className="tax-cell-value">{formatMoney(delta)}</span>
+      </td>
     </tr>
   )
 }

@@ -820,6 +820,118 @@ a {
   white-space: nowrap;
 }
 
+.tax-cell-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tax-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .tax-table-breakdown {
+    display: block;
+  }
+
+  .tax-table-breakdown thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .tax-table-breakdown tbody,
+  .tax-table-breakdown tfoot {
+    display: block;
+  }
+
+  .tax-table-breakdown tbody tr,
+  .tax-table-breakdown tfoot tr {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--bg);
+  }
+
+  .tax-table-breakdown tfoot tr {
+    margin-bottom: 0;
+    background: var(--accent-soft);
+    border-color: hsl(var(--brand-h), 30%, 82%);
+  }
+
+  .tax-table-breakdown tbody th[scope='row'],
+  .tax-table-breakdown tbody td,
+  .tax-table-breakdown tfoot th[scope='row'],
+  .tax-table-breakdown tfoot td {
+    display: block;
+    padding: 0;
+    border: none;
+    text-align: left;
+  }
+
+  .tax-table-breakdown tbody th[scope='row'],
+  .tax-table-breakdown tfoot th[scope='row'] {
+    margin-bottom: 0.65rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tax-table-breakdown tbody td[data-label],
+  .tax-table-breakdown tfoot td[data-label] {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.45rem 0;
+    border-top: 1px solid var(--border);
+    white-space: normal;
+  }
+
+  .tax-table-breakdown tbody tr td[data-label]:first-of-type,
+  .tax-table-breakdown tfoot tr td[data-label]:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .tax-table-breakdown tbody td[data-label]::before,
+  .tax-table-breakdown tfoot td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 1 45%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1.35;
+    padding-top: 0.1rem;
+  }
+
+  .tax-table-breakdown .tax-cell-stack,
+  .tax-table-breakdown .tax-cell-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+  }
+
+  .tax-table-breakdown .num {
+    white-space: normal;
+  }
+
+  .tax-table-breakdown tfoot th[scope='row'] {
+    font-size: 1rem;
+  }
+}
+
 .tax-col-note {
   display: block;
   font-size: 0.7rem;
