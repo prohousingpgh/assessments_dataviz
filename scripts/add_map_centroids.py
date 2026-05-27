@@ -54,6 +54,14 @@ def add_centroids(db_path: Path, centroids_path: Path) -> None:
     conn.execute("DROP TABLE IF EXISTS _map_centroids")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_parcels_geo ON parcels(lon, lat)")
     conn.commit()
+    # Rebuild indexes/pages after large in-place updates so packaged DBs stay healthy.
+    conn.execute("REINDEX")
+    conn.execute("VACUUM")
+    integrity = conn.execute("PRAGMA integrity_check").fetchone()
+    status = str(integrity[0]) if integrity else "unknown"
+    if status.lower() != "ok":
+        conn.close()
+        raise SystemExit(f"Database integrity check failed after centroid merge: {status}")
     conn.close()
     print(f"Matched {matched:,} / {total:,} homeowner parcels with map coordinates")
 

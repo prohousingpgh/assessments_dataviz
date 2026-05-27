@@ -14,6 +14,7 @@ type ParcelMapProps = {
   config: MapConfig
   highlightParcelId?: string
   onParcelSelect?: (parcelId: string) => void
+  onDataError?: (message: string | null) => void
 }
 
 let pmtilesProtocolRegistered = false
@@ -25,11 +26,15 @@ function registerPmtilesProtocol() {
   pmtilesProtocolRegistered = true
 }
 
-function circlePaint(stops: MapConfig['value_change_color_stops']) {
+function circlePaint(
+  stops: MapConfig['value_change_color_stops'],
+  countyAveragePct: number
+) {
   return {
     'circle-color': valueChangeColorExpression(
       'value_change_pct',
-      stops
+      stops,
+      countyAveragePct
     ) as DataDrivenPropertyValueSpecification<string>,
     'circle-radius': [
       'interpolate',
@@ -60,7 +65,10 @@ function addParcelLayers(
     id: 'parcels-fill',
     type: 'circle',
     source: sourceId,
-    paint: circlePaint(config.value_change_color_stops) as maplibregl.CircleLayerSpecification['paint'],
+    paint: circlePaint(
+      config.value_change_color_stops,
+      config.county_avg_value_change_pct
+    ) as maplibregl.CircleLayerSpecification['paint'],
   }
   if (sourceLayer) {
     layer['source-layer'] = sourceLayer
@@ -95,6 +103,7 @@ function addParcelLayers(
 
 function bindParcelInteractions(
   map: MapLibreMap,
+  countyAveragePct: number,
   onParcelSelect?: (parcelId: string) => void
 ) {
   const popup = new maplibregl.Popup({
@@ -110,15 +119,18 @@ function bindParcelInteractions(
     if (!feature) return
     const props = feature.properties as Record<string, string | number | null>
     const pct = props.value_change_pct
+    const relPct = typeof pct === 'number' ? pct - countyAveragePct : null
     const pctText =
       pct == null || pct === -9999
         ? 'n/a'
         : `${Number(pct) > 0 ? '+' : ''}${Number(pct).toFixed(1)}%`
+    const relText =
+      relPct == null ? 'n/a' : `${relPct > 0 ? '+' : ''}${relPct.toFixed(1)} pp vs county avg`
     popup
       .setLngLat(event.lngLat)
       .setHTML(
         `<strong>${props.address_display ?? props.municipality ?? 'Home'}</strong><br/>` +
-          `Assessment change: ${pctText}`
+          `Assessment change: ${pctText}<br/>Relative to county: ${relText}`
       )
       .addTo(map)
   })
@@ -156,6 +168,7 @@ export function ParcelMap({
   config,
   highlightParcelId,
   onParcelSelect,
+  onDataError,
 }: ParcelMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
@@ -236,10 +249,13 @@ export function ParcelMap({
               if (generation !== loadGenerationRef.current) return
               const source = map.getSource('parcels') as maplibregl.GeoJSONSource | undefined
               source?.setData(collection)
+              onDataError?.(null)
             })
             .catch((err: unknown) => {
               if (err instanceof DOMException && err.name === 'AbortError') return
               if (generation !== loadGenerationRef.current) return
+              console.error('Failed to load parcel points for map viewport', err)
+              onDataError?.('Could not load parcel dots. Try refreshing or zooming in.')
             })
         }
 
@@ -255,7 +271,7 @@ export function ParcelMap({
         map.on('zoomend', scheduleLoad)
       }
 
-      bindParcelInteractions(map, onParcelSelect)
+      bindParcelInteractions(map, config.county_avg_value_change_pct, onParcelSelect)
     })
 
     return () => {
@@ -267,7 +283,7 @@ export function ParcelMap({
       map.remove()
       mapRef.current = null
     }
-  }, [config, onParcelSelect])
+  }, [config, onDataError, onParcelSelect])
 
   useEffect(() => {
     const map = mapRef.current

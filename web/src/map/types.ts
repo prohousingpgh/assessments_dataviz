@@ -15,6 +15,7 @@ export type MapConfig = {
   bounds: MapBounds
   center: [number, number]
   value_change_color_stops: MapColorStop[]
+  county_avg_value_change_pct: number
   pmtiles_url: string | null
   source_layer: string
   parcel_count: number

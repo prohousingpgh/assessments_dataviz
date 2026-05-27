@@ -15,14 +15,14 @@ DEFAULT_BOUNDS: dict[str, float] = {
     "north": 40.72,
 }
 
-# Choropleth breaks for value_change_pct (percent).
-VALUE_CHANGE_COLOR_STOPS: list[dict[str, Any]] = [
-    {"pct": -50, "color": "#2166ac"},
-    {"pct": 0, "color": "#67a9cf"},
-    {"pct": 50, "color": "#d1e5f0"},
-    {"pct": 100, "color": "#fddbc7"},
-    {"pct": 150, "color": "#ef8a62"},
-    {"pct": 200, "color": "#b2182b"},
+# Choropleth breaks in percentage points relative to county average growth.
+RELATIVE_CHANGE_COLOR_STOPS: list[dict[str, Any]] = [
+    {"pct": -80, "color": "#2166ac"},
+    {"pct": -40, "color": "#67a9cf"},
+    {"pct": -10, "color": "#d1e5f0"},
+    {"pct": 10, "color": "#fddbc7"},
+    {"pct": 40, "color": "#ef8a62"},
+    {"pct": 80, "color": "#b2182b"},
 ]
 
 
@@ -61,6 +61,7 @@ def map_config(conn: sqlite3.Connection) -> dict[str, Any]:
     has_centroids = has_parcel_centroids(conn)
     has_pmtiles = PMTILES_PATH.is_file()
     mode = "pmtiles" if has_pmtiles else ("points" if has_centroids else "unavailable")
+    county_avg_value_change_pct = _county_avg_value_change_pct(conn)
     return {
         "mode": mode,
         "bounds": bounds,
@@ -68,7 +69,8 @@ def map_config(conn: sqlite3.Connection) -> dict[str, Any]:
             (bounds["west"] + bounds["east"]) / 2,
             (bounds["south"] + bounds["north"]) / 2,
         ],
-        "value_change_color_stops": VALUE_CHANGE_COLOR_STOPS,
+        "value_change_color_stops": RELATIVE_CHANGE_COLOR_STOPS,
+        "county_avg_value_change_pct": county_avg_value_change_pct,
         "pmtiles_url": "/api/map/tiles/parcels.pmtiles" if has_pmtiles else None,
         "source_layer": "parcels",
         "parcel_count": _parcel_count(conn),
@@ -80,19 +82,16 @@ def _parcel_count(conn: sqlite3.Connection) -> int:
     return int(row["n"]) if row else 0
 
 
-def _sample_stride(zoom: float) -> int:
-    """Thin parcels at low zoom so dots stay evenly distributed, not a random 6k slice."""
-    if zoom >= 14:
-        return 1
-    if zoom >= 13:
-        return 2
-    if zoom >= 12:
-        return 4
-    if zoom >= 11:
-        return 8
-    if zoom >= 10:
-        return 16
-    return 32
+def _county_avg_value_change_pct(conn: sqlite3.Connection) -> float:
+    row = conn.execute(
+        """
+        SELECT AVG(value_change_pct) AS avg_value_change_pct
+        FROM parcels
+        WHERE current_assessment_total > 0 AND new_assessment_total > 0
+        """
+    ).fetchone()
+    value = row["avg_value_change_pct"] if row else None
+    return float(value) if value is not None else 0.0
 
 
 def _limit_for_zoom(zoom: float) -> int:
@@ -102,7 +101,11 @@ def _limit_for_zoom(zoom: float) -> int:
         return 10_000
     if zoom >= 12:
         return 8_000
-    return 6_000
+    if zoom >= 11:
+        return 7_500
+    if zoom >= 10:
+        return 9_000
+    return 10_000
 
 
 def map_parcels_geojson(
@@ -123,39 +126,19 @@ def map_parcels_geojson(
 
     z = 12.0 if zoom is None else float(zoom)
     cap = _limit_for_zoom(z) if limit is None else max(1, min(limit, 12_000))
-    stride = _sample_stride(z)
-
-    if stride <= 1:
-        rows = conn.execute(
-            """
-            SELECT parcel_id, lon, lat, value_change_pct, address_display, municipality
-            FROM parcels
-            WHERE lon IS NOT NULL
-              AND lat IS NOT NULL
-              AND lon BETWEEN ? AND ?
-              AND lat BETWEEN ? AND ?
-            ORDER BY lat, lon
-            LIMIT ?
-            """,
-            (west, east, south, north, cap),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            """
-            SELECT parcel_id, lon, lat, value_change_pct, address_display, municipality
-            FROM parcels
-            WHERE lon IS NOT NULL
-              AND lat IS NOT NULL
-              AND lon BETWEEN ? AND ?
-              AND lat BETWEEN ? AND ?
-              AND (
-                abs(CAST(lon * 100000 AS INTEGER) * 31 + CAST(lat * 100000 AS INTEGER)) % ?
-              ) = 0
-            ORDER BY lat, lon
-            LIMIT ?
-            """,
-            (west, east, south, north, stride, cap),
-        ).fetchall()
+    rows = conn.execute(
+        """
+        SELECT parcel_id, lon, lat, value_change_pct, address_display, municipality
+        FROM parcels
+        WHERE lon IS NOT NULL
+          AND lat IS NOT NULL
+          AND lon BETWEEN ? AND ?
+          AND lat BETWEEN ? AND ?
+        ORDER BY random()
+        LIMIT ?
+        """,
+        (west, east, south, north, cap),
+    ).fetchall()
 
     features: list[dict[str, Any]] = []
     for row in rows:
@@ -182,7 +165,7 @@ def map_parcels_geojson(
             "returned": len(features),
             "limit": cap,
             "zoom": z,
-            "sample_stride": stride,
+            "sample_stride": 1,
         },
     }
 

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getMapConfig } from '../api'
 import { PageHeader } from '../components/PageHeader'
 import { usePageTitle } from '../hooks/usePageTitle'
-import { MAP_COLOR_STOPS, formatLegendLabel } from '../map/colors'
+import { formatLegendLabel } from '../map/colors'
 import { ParcelMap } from '../map/ParcelMap'
 import type { MapConfig } from '../map/types'
 
@@ -15,6 +15,7 @@ export function MapPage() {
 
   const [config, setConfig] = useState<MapConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [mapDataError, setMapDataError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export function MapPage() {
 
       {loading && <p className="page-meta">Loading map…</p>}
       {error && <p className="search-error">{error}</p>}
+      {mapDataError && <p className="search-error">{mapDataError}</p>}
 
       {!loading && config?.mode === 'unavailable' && (
         <section className="card panel map-unavailable">
@@ -78,14 +80,15 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
               config={config}
               highlightParcelId={highlightParcelId}
               onParcelSelect={onParcelSelect}
+              onDataError={setMapDataError}
             />
           </div>
           <div className="map-legend" aria-label="Assessment change legend">
-            {MAP_COLOR_STOPS.map((stop, index) => {
-              const next = MAP_COLOR_STOPS[index + 1]
+            {config.value_change_color_stops.map((stop, index) => {
+              const next = config.value_change_color_stops[index + 1]
               const label = next
-                ? `${formatLegendLabel(stop.pct)} (${stop.pct}% to ${next.pct}%)`
-                : `${formatLegendLabel(stop.pct)} (${stop.pct}%+)`
+                ? `${formatLegendLabel(stop.pct)} (${stop.pct} to ${next.pct} pp)`
+                : `${formatLegendLabel(stop.pct)} (${stop.pct}+ pp)`
               return (
                 <div key={stop.pct} className="map-legend-item">
                   <span
@@ -99,6 +102,7 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
             })}
           </div>
           <p className="page-meta map-help">
+            Color shows how much a parcel changed relative to the county average growth rate.
             Click a home to open its detail page.
             {highlightParcelId && (
               <>
