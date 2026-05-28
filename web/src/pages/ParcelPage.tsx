@@ -228,7 +228,7 @@ export function ParcelPage() {
         </section>
 
         <section className="card card-accent">
-          <h2>After reassessment value (modeled)</h2>
+          <h2>Reassessed value (modeled)</h2>
           <div className="headline-metrics">
             <div className="headline-metric">
               <p className="headline-label">Assessed value</p>
