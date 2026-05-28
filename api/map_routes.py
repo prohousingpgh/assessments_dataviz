@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from api.map_data import (
     PMTILES_PATH,
     map_config,
+    map_hexbins_geojson,
     map_parcel_feature,
     map_parcels_geojson,
 )
@@ -43,6 +44,19 @@ def get_map_parcels(
         north=north,
         limit=limit,
         zoom=zoom,
+    )
+
+
+@router.get("/hexbins")
+def get_map_hexbins(
+    request: Request,
+    hex_size_deg: float = Query(0.006, ge=0.0025, le=0.03),
+    min_count: int = Query(10, ge=1, le=500),
+) -> dict[str, Any]:
+    return map_hexbins_geojson(
+        _db(request),
+        hex_size_deg=hex_size_deg,
+        min_count=min_count,
     )
 
 

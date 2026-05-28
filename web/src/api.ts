@@ -1,4 +1,4 @@
-import type { MapConfig, MapParcelCollection } from './map/types'
+import type { MapConfig, MapHexbinCollection, MapParcelCollection, MapParcelFeature } from './map/types'
 import type { CountySummary, Manifest, Parcel, PropertyTaxes, SearchResult } from './types'
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -30,6 +30,10 @@ export function getMapConfig(): Promise<MapConfig> {
   return fetchJson('/api/map/config')
 }
 
+export function getMapParcelFeature(parcelId: string): Promise<MapParcelFeature> {
+  return fetchJson(`/api/map/parcels/${encodeURIComponent(parcelId)}`)
+}
+
 export async function getMapParcels(
   params: {
     west: number
@@ -59,6 +63,21 @@ export async function getMapParcels(
     throw new Error(body || res.statusText)
   }
   return res.json() as Promise<MapParcelCollection>
+}
+
+export function getMapHexbins(params?: {
+  hex_size_deg?: number
+  min_count?: number
+}): Promise<MapHexbinCollection> {
+  const query = new URLSearchParams()
+  if (params?.hex_size_deg != null) {
+    query.set('hex_size_deg', String(params.hex_size_deg))
+  }
+  if (params?.min_count != null) {
+    query.set('min_count', String(params.min_count))
+  }
+  const suffix = query.toString() ? `?${query}` : ''
+  return fetchJson(`/api/map/hexbins${suffix}`)
 }
 
 export type HomesteadExemptionEntry = {

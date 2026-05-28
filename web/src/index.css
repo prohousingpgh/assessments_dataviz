@@ -1139,3 +1139,15 @@ a {
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(26, 31, 38, 0.15);
 }
+
+.hex-surface-panel h2 {
+  margin-top: 0;
+}
+
+.hex-surface-shell {
+  margin-top: 0.75rem;
+}
+
+.hex-surface-map {
+  height: min(72vh, 620px);
+}

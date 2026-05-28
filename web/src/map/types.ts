@@ -45,3 +45,26 @@ export type MapParcelCollection = {
     sample_stride: number
   }
 }
+
+export type MapHexbinFeature = {
+  type: 'Feature'
+  geometry: {
+    type: 'Polygon'
+    coordinates: [Array<[number, number]>]
+  }
+  properties: {
+    count: number
+    rel_change_pp: number
+  }
+}
+
+export type MapHexbinCollection = {
+  type: 'FeatureCollection'
+  features: MapHexbinFeature[]
+  meta?: {
+    returned: number
+    hex_size_deg: number
+    min_count: number
+    county_avg_value_change_pct: number
+  }
+}

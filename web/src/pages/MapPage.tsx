@@ -1,36 +1,42 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { getMapConfig } from '../api'
+import { useSearchParams } from 'react-router-dom'
+import { getMapConfig, getMapHexbins } from '../api'
 import { PageHeader } from '../components/PageHeader'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { formatLegendLabel } from '../map/colors'
-import { ParcelMap } from '../map/ParcelMap'
-import type { MapConfig } from '../map/types'
+import { HexSurfaceMap } from '../map/HexSurfaceMap'
+import { ParcelMap, type FocusedParcel } from '../map/ParcelMap'
+import type { MapConfig, MapHexbinCollection } from '../map/types'
 
 export function MapPage() {
   usePageTitle('Neighborhood map')
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const highlightParcelId = searchParams.get('parcel') ?? undefined
+  const queryParcelId = searchParams.get('parcel') ?? undefined
 
   const [config, setConfig] = useState<MapConfig | null>(null)
+  const [hexbins, setHexbins] = useState<MapHexbinCollection | null>(null)
+  const [selectedParcelId, setSelectedParcelId] = useState<string | undefined>(queryParcelId)
   const [error, setError] = useState<string | null>(null)
   const [mapDataError, setMapDataError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getMapConfig()
-      .then(setConfig)
+    setSelectedParcelId(queryParcelId)
+  }, [queryParcelId])
+
+  useEffect(() => {
+    Promise.all([getMapConfig(), getMapHexbins({ hex_size_deg: 0.006, min_count: 8 })])
+      .then(([cfg, hex]) => {
+        setConfig(cfg)
+        setHexbins(hex)
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load map'))
       .finally(() => setLoading(false))
   }, [])
 
-  const onParcelSelect = useCallback(
-    (parcelId: string) => {
-      navigate(`/home/${encodeURIComponent(parcelId)}`)
-    },
-    [navigate]
-  )
+  const onParcelFocus = useCallback((parcel: FocusedParcel) => {
+    setSelectedParcelId(parcel.parcelId)
+  }, [])
 
   return (
     <div className="page page--map">
@@ -78,8 +84,8 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
           <div className="map-shell">
             <ParcelMap
               config={config}
-              highlightParcelId={highlightParcelId}
-              onParcelSelect={onParcelSelect}
+              highlightParcelId={selectedParcelId}
+              onParcelFocus={onParcelFocus}
               onDataError={setMapDataError}
             />
           </div>
@@ -103,20 +109,36 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
           </div>
           <p className="page-meta map-help">
             Color shows how much a parcel changed relative to the county average growth rate.
-            Click a home to open its detail page.
-            {highlightParcelId && (
-              <>
-                {' '}
-                Highlighting parcel{' '}
-                <Link to={`/home/${encodeURIComponent(highlightParcelId)}`}>
-                  {highlightParcelId}
-                </Link>
-                .
-              </>
-            )}
+            {' '}
+            <strong>pp</strong> means percentage points versus county average.
+            Click a home to focus it and use the popup link to open full details.
           </p>
+
+          {hexbins && hexbins.features.length > 0 && (
+            <section className="card panel hex-surface-panel">
+              <h2>Countywide relative-change surface (hex bins)</h2>
+              <p className="detail-foot">
+                3D hex bins show where assessment changes are faster or slower than the county
+                average. Height indicates parcel concentration in each hex, and
+                color indicates direction.
+              </p>
+              <div className="map-shell hex-surface-shell">
+                <HexSurfaceMap
+                  data={hexbins}
+                  bounds={config.bounds}
+                  center={config.center}
+                  stops={config.value_change_color_stops}
+                  countyAveragePct={config.county_avg_value_change_pct}
+                />
+              </div>
+              <p className="page-meta map-help">
+                Hover a hex to see sample size and relative change. Hex bins shown: {hexbins.meta?.returned ?? hexbins.features.length}.
+              </p>
+            </section>
+          )}
         </>
       )}
     </div>
   )
 }
+

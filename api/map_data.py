@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -166,6 +167,93 @@ def map_parcels_geojson(
             "limit": cap,
             "zoom": z,
             "sample_stride": 1,
+        },
+    }
+
+
+def map_hexbins_geojson(
+    conn: sqlite3.Connection,
+    *,
+    hex_size_deg: float = 0.006,
+    min_count: int = 10,
+) -> dict[str, Any]:
+    """Return countywide hex-like bins aggregated by relative assessment change."""
+    if not has_parcel_centroids(conn):
+        return {"type": "FeatureCollection", "features": [], "meta": {"returned": 0}}
+
+    bounds = parcel_bounds(conn)
+    county_avg = _county_avg_value_change_pct(conn)
+    size = max(0.0025, min(0.03, float(hex_size_deg)))
+    min_samples = max(1, min(500, int(min_count)))
+
+    rows = conn.execute(
+        """
+        SELECT lon, lat, value_change_pct
+        FROM parcels
+        WHERE lon IS NOT NULL
+          AND lat IS NOT NULL
+          AND value_change_pct IS NOT NULL
+        """
+    ).fetchall()
+
+    sqrt3 = math.sqrt(3.0)
+    horiz = sqrt3 * size
+    vert = 1.5 * size
+
+    bins: dict[tuple[int, int], dict[str, float]] = {}
+    for row in rows:
+        lon = float(row["lon"])
+        lat = float(row["lat"])
+        pct = float(row["value_change_pct"])
+
+        r = int(math.floor((lat - bounds["south"]) / vert))
+        x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+        q = int(math.floor((lon - bounds["west"] - x_offset) / horiz))
+        key = (q, r)
+
+        bucket = bins.setdefault(key, {"sum_rel": 0.0, "count": 0.0})
+        bucket["sum_rel"] += pct - county_avg
+        bucket["count"] += 1.0
+
+    features: list[dict[str, Any]] = []
+    for (q, r), bucket in bins.items():
+        count = int(bucket["count"])
+        if count < min_samples:
+            continue
+
+        x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+        center_lon = bounds["west"] + x_offset + (q + 0.5) * horiz
+        center_lat = bounds["south"] + r * vert + size
+        rel_change = bucket["sum_rel"] / bucket["count"]
+
+        ring: list[list[float]] = []
+        for i in range(6):
+            angle = math.pi / 3.0 * i
+            ring.append([
+                center_lon + size * math.cos(angle),
+                center_lat + size * math.sin(angle),
+            ])
+        ring.append(ring[0])
+
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Polygon", "coordinates": [ring]},
+                "properties": {
+                    "count": count,
+                    "rel_change_pp": round(rel_change, 3),
+                },
+            }
+        )
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "meta": {
+            "returned": len(features),
+            "hex_size_deg": size,
+            "min_count": min_samples,
+            "county_avg_value_change_pct": county_avg,
         },
     }
 

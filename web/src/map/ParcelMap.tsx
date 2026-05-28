@@ -10,11 +10,21 @@ import { getMapParcels } from '../api'
 import { valueChangeColorExpression } from './colors'
 import type { MapConfig } from './types'
 
+export type FocusedParcel = {
+  parcelId: string
+  addressDisplay?: string
+  municipality?: string
+  valueChangePct?: number | null
+}
+
 type ParcelMapProps = {
   config: MapConfig
   highlightParcelId?: string
-  onParcelSelect?: (parcelId: string) => void
+  onParcelFocus?: (parcel: FocusedParcel) => void
   onDataError?: (message: string | null) => void
+  initialCenter?: [number, number]
+  initialZoom?: number
+  maxBoundsOverride?: [[number, number], [number, number]]
 }
 
 let pmtilesProtocolRegistered = false
@@ -104,10 +114,16 @@ function addParcelLayers(
 function bindParcelInteractions(
   map: MapLibreMap,
   countyAveragePct: number,
-  onParcelSelect?: (parcelId: string) => void
+  onParcelFocus?: (parcel: FocusedParcel) => void
 ) {
-  const popup = new maplibregl.Popup({
+  const hoverPopup = new maplibregl.Popup({
     closeButton: false,
+    closeOnClick: false,
+    offset: 12,
+    className: 'map-popup',
+  })
+  const focusPopup = new maplibregl.Popup({
+    closeButton: true,
     closeOnClick: false,
     offset: 12,
     className: 'map-popup',
@@ -126,7 +142,7 @@ function bindParcelInteractions(
         : `${Number(pct) > 0 ? '+' : ''}${Number(pct).toFixed(1)}%`
     const relText =
       relPct == null ? 'n/a' : `${relPct > 0 ? '+' : ''}${relPct.toFixed(1)} pp vs county avg`
-    popup
+    hoverPopup
       .setLngLat(event.lngLat)
       .setHTML(
         `<strong>${props.address_display ?? props.municipality ?? 'Home'}</strong><br/>` +
@@ -137,15 +153,35 @@ function bindParcelInteractions(
 
   map.on('mouseleave', 'parcels-fill', () => {
     map.getCanvas().style.cursor = ''
-    popup.remove()
+    hoverPopup.remove()
   })
 
   map.on('click', 'parcels-fill', (event: MapLayerMouseEvent) => {
     const feature = event.features?.[0]
-    const parcelId = feature?.properties?.parcel_id
-    if (typeof parcelId === 'string' && onParcelSelect) {
-      onParcelSelect(parcelId)
-    }
+    const props = (feature?.properties ?? {}) as Record<string, string | number | null>
+    const parcelId = props.parcel_id
+    if (typeof parcelId !== 'string') return
+    const pct =
+      typeof props.value_change_pct === 'number' ? props.value_change_pct : null
+    const relPct = pct == null ? null : pct - countyAveragePct
+    const pctText =
+      pct == null || pct === -9999 ? 'n/a' : `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`
+    const relText =
+      relPct == null ? 'n/a' : `${relPct > 0 ? '+' : ''}${relPct.toFixed(1)} pp vs county avg`
+    focusPopup
+      .setLngLat(event.lngLat)
+      .setHTML(
+        `<strong>${props.address_display ?? props.municipality ?? 'Home'}</strong><br/>` +
+          `Assessment change: ${pctText}<br/>Relative to county: ${relText}<br/>` +
+          `<a href="/home/${encodeURIComponent(parcelId)}">Expand full property details</a>`
+      )
+      .addTo(map)
+    onParcelFocus?.({
+      parcelId,
+      addressDisplay: typeof props.address_display === 'string' ? props.address_display : undefined,
+      municipality: typeof props.municipality === 'string' ? props.municipality : undefined,
+      valueChangePct: pct,
+    })
   })
 }
 
@@ -164,11 +200,32 @@ function padBounds(bounds: maplibregl.LngLatBounds, fraction: number) {
   }
 }
 
+function applyParcelHighlight(map: MapLibreMap, parcelId?: string) {
+  if (!map.getLayer('parcels-highlight')) return
+  map.setFilter('parcels-highlight', ['==', ['get', 'parcel_id'], parcelId ?? ''])
+  if (!parcelId) return
+  const featureUrl = `/api/map/parcels/${encodeURIComponent(parcelId)}`
+  fetch(featureUrl)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((feature) => {
+      if (!feature?.geometry?.coordinates) return
+      map.flyTo({
+        center: feature.geometry.coordinates as [number, number],
+        zoom: Math.max(map.getZoom(), 15),
+        duration: 900,
+      })
+    })
+    .catch(() => undefined)
+}
+
 export function ParcelMap({
   config,
   highlightParcelId,
-  onParcelSelect,
+  onParcelFocus,
   onDataError,
+  initialCenter,
+  initialZoom,
+  maxBoundsOverride,
 }: ParcelMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
@@ -201,12 +258,14 @@ export function ParcelMap({
           },
         ],
       },
-      center: config.center,
-      zoom: 10,
-      maxBounds: [
-        [config.bounds.west - 0.05, config.bounds.south - 0.05],
-        [config.bounds.east + 0.05, config.bounds.north + 0.05],
-      ],
+      center: initialCenter ?? config.center,
+      zoom: initialZoom ?? 10,
+      maxBounds:
+        maxBoundsOverride ??
+        [
+          [config.bounds.west - 0.05, config.bounds.south - 0.05],
+          [config.bounds.east + 0.05, config.bounds.north + 0.05],
+        ],
     })
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
@@ -271,7 +330,8 @@ export function ParcelMap({
         map.on('zoomend', scheduleLoad)
       }
 
-      bindParcelInteractions(map, config.county_avg_value_change_pct, onParcelSelect)
+      bindParcelInteractions(map, config.county_avg_value_change_pct, onParcelFocus)
+      applyParcelHighlight(map, highlightParcelId)
     })
 
     return () => {
@@ -283,30 +343,19 @@ export function ParcelMap({
       map.remove()
       mapRef.current = null
     }
-  }, [config, onDataError, onParcelSelect])
+  }, [
+    config,
+    initialCenter,
+    initialZoom,
+    maxBoundsOverride,
+    onDataError,
+    onParcelFocus,
+  ])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !map.getLayer('parcels-highlight')) return
-    map.setFilter('parcels-highlight', [
-      '==',
-      ['get', 'parcel_id'],
-      highlightParcelId ?? '',
-    ])
-    if (highlightParcelId) {
-      const featureUrl = `/api/map/parcels/${encodeURIComponent(highlightParcelId)}`
-      fetch(featureUrl)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((feature) => {
-          if (!feature?.geometry?.coordinates) return
-          map.flyTo({
-            center: feature.geometry.coordinates as [number, number],
-            zoom: Math.max(map.getZoom(), 15),
-            duration: 900,
-          })
-        })
-        .catch(() => undefined)
-    }
+    if (!map) return
+    applyParcelHighlight(map, highlightParcelId)
   }, [highlightParcelId])
 
   return <div className="parcel-map" ref={containerRef} aria-label="Neighborhood map" />

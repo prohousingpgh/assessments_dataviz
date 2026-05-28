@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getParcel } from '../api'
+import { getMapConfig, getMapParcelFeature, getParcel } from '../api'
 import type { CountySummary, Parcel, PropertyTaxes, TaxLine } from '../types'
 import { PageHeader } from '../components/PageHeader'
 import { TaxingBodyLabel, type TaxingBodyKind } from '../components/TaxingBodyLabel'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { ParcelMap, type FocusedParcel } from '../map/ParcelMap'
+import type { MapConfig } from '../map/types'
 import { CommercialGrowthSlider } from '../components/CommercialGrowthSlider'
 import {
   clampCommercialGrowth,
@@ -41,6 +43,10 @@ export function ParcelPage() {
   const [homesteadEnabled, setHomesteadEnabled] = useState(false)
   const [incomeBelow125Ami, setIncomeBelow125Ami] = useState(false)
   const [commercialGrowth, setCommercialGrowth] = useState<number | null>(null)
+  const [mapConfig, setMapConfig] = useState<MapConfig | null>(null)
+  const [nearbyCenter, setNearbyCenter] = useState<[number, number] | null>(null)
+  const [nearbyMapError, setNearbyMapError] = useState<string | null>(null)
+  const [focusedNearbyParcel, setFocusedNearbyParcel] = useState<FocusedParcel | null>(null)
 
   useEffect(() => {
     setCommercialGrowth(null)
@@ -116,15 +122,50 @@ export function ParcelPage() {
         setTaxes(data.taxes)
         setSummary(data.county_summary)
         setHomesteadEnabled(defaultHomesteadToggle(data.parcel))
+        setFocusedNearbyParcel({
+          parcelId: data.parcel.parcel_id,
+          addressDisplay: data.parcel.address_display,
+          municipality: data.parcel.municipality,
+          valueChangePct: data.parcel.value_change_pct,
+        })
         setError(null)
       })
       .catch((e) => {
         setParcel(null)
         setTaxes(null)
+        setFocusedNearbyParcel(null)
         setError(e instanceof Error ? e.message : 'Failed to load')
       })
       .finally(() => setLoading(false))
   }, [parcelId])
+
+  useEffect(() => {
+    if (!parcel?.parcel_id) return
+    let cancelled = false
+    Promise.all([getMapConfig(), getMapParcelFeature(parcel.parcel_id)])
+      .then(([cfg, feature]) => {
+        if (cancelled) return
+        const coords = feature.geometry?.coordinates as [number, number] | undefined
+        if (!coords) {
+          setNearbyMapError('Could not locate this parcel on the map.')
+          setMapConfig(null)
+          setNearbyCenter(null)
+          return
+        }
+        setMapConfig(cfg)
+        setNearbyCenter(coords)
+        setNearbyMapError(null)
+      })
+      .catch((e) => {
+        if (cancelled) return
+        setNearbyMapError(e instanceof Error ? e.message : 'Could not load nearby map.')
+        setMapConfig(null)
+        setNearbyCenter(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [parcel?.parcel_id])
 
   usePageTitle(parcel?.address_display ?? 'Your home')
 
@@ -224,6 +265,36 @@ export function ParcelPage() {
           )}
         </section>
       </div>
+
+      <section className="card">
+        <h2>Nearby parcels</h2>
+        <p className="detail-foot">
+          Zoomed to roughly a 1.5-block radius around this property. Color shows relative change
+          versus county average. Click a parcel to focus it, then use the popup to open full
+          details.
+        </p>
+        {nearbyMapError && <p className="search-error">{nearbyMapError}</p>}
+        {!nearbyMapError &&
+          mapConfig &&
+          mapConfig.mode !== 'unavailable' &&
+          nearbyCenter && (
+          <>
+            <div className="map-shell">
+              <ParcelMap
+                config={mapConfig}
+                highlightParcelId={focusedNearbyParcel?.parcelId}
+                onParcelFocus={setFocusedNearbyParcel}
+                onDataError={setNearbyMapError}
+                initialCenter={nearbyCenter}
+                initialZoom={16}
+              />
+            </div>
+          </>
+        )}
+        {!nearbyMapError && mapConfig?.mode === 'unavailable' && (
+          <p className="page-meta">Nearby parcel map is unavailable in this data bundle.</p>
+        )}
+      </section>
 
       {taxes && displayTaxes && (
         <section className="card">
