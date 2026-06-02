@@ -29,6 +29,10 @@ python scripts/fetch_millage_2025.py
 
 Writes `data/millage_2025.json` from the Allegheny County Treasurer.
 
+Jack Billings note: those millage reates are out of date.
+For example, City of Pittsburgh millage was 8.06 in 2025, and is 9.67 in 2026.
+2026 Millage rates can be found here https://alleghenycountytreasurer.us/real-estate-tax/local-and-school-district-tax-millage/
+
 ### 3. Build the search database
 
 ```bash
