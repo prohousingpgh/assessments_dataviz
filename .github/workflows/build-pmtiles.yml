@@ -1,0 +1,45 @@
+name: Build PMTiles
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-pmtiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install tippecanoe
+        run: sudo apt-get update && sudo apt-get install -y tippecanoe
+
+      - name: Fetch latest data bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=$(gh release list --limit 20 --json tagName \
+            --jq '[.[].tagName | select(startswith("data-"))][0]')
+          if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
+            echo "::error::No data-* release found. Publish data-bundle.zip first."
+            exit 1
+          fi
+          echo "Using data release: ${TAG}"
+          gh release download "${TAG}" --pattern 'data-bundle.zip' --dir /tmp
+          unzip -o /tmp/data-bundle.zip -d data/
+
+      - name: Build parcels.pmtiles
+        run: python scripts/build_map_tiles.py --db data/parcels.db
+
+      - name: Upload PMTiles artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: parcels-pmtiles
+          path: data/parcels.pmtiles
+          retention-days: 14
