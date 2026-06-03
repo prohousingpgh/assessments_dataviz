@@ -1080,6 +1080,25 @@ a {
   max-width: 1100px;
 }
 
+.map-section {
+  margin-top: 2rem;
+}
+
+.map-section:first-of-type {
+  margin-top: 0;
+}
+
+.map-section--valuation {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.map-section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+}
+
 .map-shell {
   border: 1px solid var(--border);
   border-radius: var(--radius);

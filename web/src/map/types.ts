@@ -68,3 +68,72 @@ export type MapHexbinCollection = {
     county_avg_value_change_pct: number
   }
 }
+
+export type ValuationRatioBin = {
+  color: string
+  label: string
+  ratio?: number
+}
+
+export type ValuationMapConfig = {
+  mode: 'pmtiles' | 'points' | 'unavailable'
+  bounds: MapBounds
+  center: [number, number]
+  valuation_ratio_bins: ValuationRatioBin[]
+  county_median_assessment_ratio: number
+  pmtiles_url: string | null
+  source_layer: string
+  parcel_count: number
+}
+
+export type ValuationMapParcelFeature = {
+  type: 'Feature'
+  geometry: {
+    type: 'Point'
+    coordinates: [number, number]
+  }
+  properties: {
+    parcel_id: string
+    valuation_ratio: number | null
+    address_display?: string
+    municipality?: string
+    current_assessment_total?: number
+    new_assessment_total?: number
+  }
+}
+
+export type ValuationMapParcelCollection = {
+  type: 'FeatureCollection'
+  features: ValuationMapParcelFeature[]
+  meta?: {
+    returned: number
+    limit: number
+    zoom: number
+    county_median_assessment_ratio: number
+  }
+}
+
+export type ValuationMapHexbinFeature = {
+  type: 'Feature'
+  geometry: {
+    type: 'Polygon'
+    coordinates: [Array<[number, number]>]
+  }
+  properties: {
+    count: number
+    avg_valuation_ratio: number
+  }
+}
+
+export type ValuationMapHexbinCollection = {
+  type: 'FeatureCollection'
+  features: ValuationMapHexbinFeature[]
+  meta?: {
+    returned: number
+    hex_size_deg: number
+    min_count: number
+    county_median_assessment_ratio: number
+  }
+}
+
+export type MapDisplayMode = 'value_change' | 'valuation_ratio'

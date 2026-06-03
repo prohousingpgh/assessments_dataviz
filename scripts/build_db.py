@@ -183,11 +183,33 @@ def load_predictions(predictions_path: Path) -> pd.DataFrame:
     return df
 
 
+def attach_valuation_ratio(df: pd.DataFrame) -> tuple[pd.DataFrame, float]:
+    """Median-scaled new/old assessment ratio (1.0 = county median parcel)."""
+    work = df.copy()
+    cur = work["current_assessment_total"].astype(float)
+    new = work["new_assessment_total"].astype(float)
+    valid = (cur > 0) & (new > 0)
+    assessment_ratio = new / cur.replace(0, pd.NA)
+    sorted_ratios = assessment_ratio.loc[valid].sort_values()
+    n = len(sorted_ratios)
+    if n == 0:
+        median_ratio = 1.0
+    elif n % 2 == 1:
+        median_ratio = float(sorted_ratios.iloc[n // 2])
+    else:
+        mid = n // 2
+        median_ratio = float((sorted_ratios.iloc[mid - 1] + sorted_ratios.iloc[mid]) / 2)
+    work["valuation_ratio"] = assessment_ratio / median_ratio
+    return work, median_ratio
+
+
 def write_manifest(
     conn: sqlite3.Connection,
     predictions_path: Path,
     row_count: int,
     assessments_path: Path | None = None,
+    *,
+    county_median_assessment_ratio: float | None = None,
 ) -> None:
     import json
     from datetime import datetime, timezone
@@ -214,6 +236,7 @@ def write_manifest(
         "has_street_addresses": assessments_path is not None,
         "parcel_count": row_count,
         "county_residential_value_ratio": ratio,
+        "county_median_assessment_ratio": county_median_assessment_ratio,
         "methodology_url": "https://github.com/prohousingpgh/agc_assessments",
         "valuation_date": "2025-01-01",
         "tax_year": 2025,
@@ -377,6 +400,7 @@ def build_db(
         print(f"Warning: centroids file not found at {centroids_path}", file=sys.stderr)
 
     df = df[df["address_search"].notna() & (df["address_search"] != "")]
+    df, county_median_ratio = attach_valuation_ratio(df)
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
     if db_path.exists():
@@ -416,7 +440,13 @@ def build_db(
         )
     conn.commit()
 
-    write_manifest(conn, predictions_path, len(df), assessments_path)
+    write_manifest(
+        conn,
+        predictions_path,
+        len(df),
+        assessments_path,
+        county_median_assessment_ratio=county_median_ratio,
+    )
     conn.close()
     print(f"Wrote {len(df):,} homeowner parcels to {db_path}")
     scenarios = tax_agg_json.get("scenarios", {})

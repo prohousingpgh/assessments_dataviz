@@ -28,6 +28,7 @@ function App() {
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="map" element={<MapPage />} />
+            <Route path="map/valuation-ratio" element={<Navigate to="/map" replace />} />
             <Route path="home/:parcelId" element={<ParcelPage />} />
             <Route path="assumptions" element={<AssumptionsPage />} />
             <Route path="homestead-exemptions" element={<HomesteadExemptionsPage />} />

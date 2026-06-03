@@ -29,7 +29,12 @@ export function Layout() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={pathname === item.to || (item.to !== '/' && pathname.startsWith(item.to)) ? 'nav-link active' : 'nav-link'}
+                className={
+                  pathname === item.to ||
+                  (item.to !== '/' && pathname.startsWith(item.to))
+                    ? 'nav-link active'
+                    : 'nav-link'
+                }
               >
                 {item.label}
               </Link>

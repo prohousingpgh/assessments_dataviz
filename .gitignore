@@ -11,5 +11,7 @@ data/*.html
 data/data-bundle.zip
 data/manifest.json
 data/tax_aggregates.json
+data/*.pmtiles
+tools/
 *.log
 .DS_Store

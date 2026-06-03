@@ -2,15 +2,23 @@ import { useEffect, useMemo, useRef } from 'react'
 import maplibregl, { type Map as MapLibreMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-import { valueChangeColorExpression } from './colors'
-import type { MapBounds, MapColorStop, MapHexbinCollection } from './types'
+import { BASEMAP_STYLE_SOURCES, basemapRasterLayer } from './basemap'
+import { valuationRatioColorExpression, valueChangeColorExpression } from './colors'
+import type {
+  MapBounds,
+  MapColorStop,
+  MapDisplayMode,
+  MapHexbinCollection,
+  ValuationMapHexbinCollection,
+} from './types'
 
 type HexSurfaceMapProps = {
-  data: MapHexbinCollection
+  data: MapHexbinCollection | ValuationMapHexbinCollection
   bounds: MapBounds
   center: [number, number]
   stops: MapColorStop[]
-  countyAveragePct: number
+  displayMode?: MapDisplayMode
+  countyAveragePct?: number
 }
 
 export function HexSurfaceMap({
@@ -18,8 +26,13 @@ export function HexSurfaceMap({
   bounds,
   center,
   stops,
-  countyAveragePct,
+  displayMode = 'value_change',
+  countyAveragePct = 0,
 }: HexSurfaceMapProps) {
+  const colorProperty =
+    displayMode === 'valuation_ratio' ? 'avg_valuation_ratio' : 'rel_change_pp'
+  const colorCenter = displayMode === 'valuation_ratio' ? 1 : 0
+  const useValuationBins = displayMode === 'valuation_ratio'
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
 
@@ -39,33 +52,22 @@ export function HexSurfaceMap({
       style: {
         version: 8,
         sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
+          ...BASEMAP_STYLE_SOURCES,
           hexbins: {
             type: 'geojson',
             data,
           },
         },
         layers: [
-          {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-          },
+          basemapRasterLayer(),
           {
             id: 'hex-fill',
             type: 'fill-extrusion',
             source: 'hexbins',
             paint: {
-              'fill-extrusion-color': valueChangeColorExpression(
-                'rel_change_pp',
-                stops,
-                0
-              ) as maplibregl.DataDrivenPropertyValueSpecification<string>,
+              'fill-extrusion-color': (useValuationBins
+                ? valuationRatioColorExpression(colorProperty)
+                : valueChangeColorExpression(colorProperty, stops, colorCenter)) as maplibregl.DataDrivenPropertyValueSpecification<string>,
               'fill-extrusion-height': [
                 '*',
                 ['coalesce', ['get', 'count'], 0],
@@ -104,15 +106,15 @@ export function HexSurfaceMap({
       const feature = event.features?.[0]
       if (!feature) return
       const props = feature.properties as Record<string, string | number | null>
-      const rel = Number(props.rel_change_pp ?? 0)
       const count = Number(props.count ?? 0)
+      const detail =
+        displayMode === 'valuation_ratio'
+          ? `Avg valuation ratio: ${Number(props.avg_valuation_ratio ?? 0).toFixed(2)} (1.0 = median)`
+          : `Relative change: ${Number(props.rel_change_pp ?? 0) > 0 ? '+' : ''}${Number(props.rel_change_pp ?? 0).toFixed(1)} pp vs county avg<br/>` +
+            `County avg change: ${countyAveragePct.toFixed(1)}%`
       popup
         .setLngLat(event.lngLat)
-        .setHTML(
-          `Hex sample: ${count.toLocaleString()} parcels<br/>` +
-            `Relative change: ${rel > 0 ? '+' : ''}${rel.toFixed(1)} pp vs county avg<br/>` +
-            `County avg change: ${countyAveragePct.toFixed(1)}%`
-        )
+        .setHTML(`Hex sample: ${count.toLocaleString()} parcels<br/>` + detail)
         .addTo(map)
     })
 
@@ -127,7 +129,7 @@ export function HexSurfaceMap({
       map.remove()
       mapRef.current = null
     }
-  }, [bounds, center, countyAveragePct, data, heightScale, stops])
+  }, [bounds, center, colorCenter, colorProperty, countyAveragePct, data, displayMode, heightScale, stops])
 
   return <div className="parcel-map hex-surface-map" ref={containerRef} aria-label="3D hex surface map" />
 }

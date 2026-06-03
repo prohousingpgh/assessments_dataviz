@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import maplibregl, {
   type DataDrivenPropertyValueSpecification,
   type MapLayerMouseEvent,
@@ -6,28 +6,56 @@ import maplibregl, {
 } from 'maplibre-gl'
 import { Protocol } from 'pmtiles'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { getMapParcels } from '../api'
-import { valueChangeColorExpression } from './colors'
-import type { MapConfig } from './types'
+import { getMapParcels, getMapValuationParcels } from '../api'
+import { BASEMAP_STYLE_SOURCES, basemapRasterLayer } from './basemap'
+import {
+  formatValuationRatio,
+  parseMapNumericProp,
+  valuationRatioColorExpression,
+  valueChangeColorExpression,
+} from './colors'
+import type {
+  MapColorStop,
+  MapConfig,
+  MapDisplayMode,
+  ValuationMapConfig,
+} from './types'
 
 export type FocusedParcel = {
   parcelId: string
   addressDisplay?: string
   municipality?: string
   valueChangePct?: number | null
+  valuationRatio?: number | null
 }
 
 type ParcelMapProps = {
-  config: MapConfig
+  config: MapConfig | ValuationMapConfig
+  displayMode?: MapDisplayMode
   highlightParcelId?: string
   onParcelFocus?: (parcel: FocusedParcel) => void
   onDataError?: (message: string | null) => void
   initialCenter?: [number, number]
   initialZoom?: number
   maxBoundsOverride?: [[number, number], [number, number]]
+  ariaLabel?: string
 }
 
 let pmtilesProtocolRegistered = false
+
+/** Stable reference so valuation map effect does not remount on every parent render. */
+const VALUATION_MAP_STOPS: MapColorStop[] = []
+
+/** Use API random sampling below this zoom. PMTiles only at very close zoom (tiles are still thinned). */
+const PMTILES_DETAIL_MIN_ZOOM = 17
+
+function sampleLimitForZoom(zoom: number): number {
+  if (zoom >= 15) return 25_000
+  if (zoom >= 14) return 20_000
+  if (zoom >= 13) return 16_000
+  if (zoom >= 12) return 12_000
+  return 10_000
+}
 
 function registerPmtilesProtocol() {
   if (pmtilesProtocolRegistered) return
@@ -36,26 +64,55 @@ function registerPmtilesProtocol() {
   pmtilesProtocolRegistered = true
 }
 
-function circlePaint(
-  stops: MapConfig['value_change_color_stops'],
-  countyAveragePct: number
-) {
+function resolveDisplayMode(
+  config: MapConfig | ValuationMapConfig,
+  displayMode?: MapDisplayMode
+): MapDisplayMode {
+  if (displayMode) return displayMode
+  return 'valuation_ratio_bins' in config ? 'valuation_ratio' : 'value_change'
+}
+
+function colorStopsForMode(
+  config: MapConfig | ValuationMapConfig,
+  mode: MapDisplayMode
+): MapColorStop[] {
+  if (mode === 'valuation_ratio') return VALUATION_MAP_STOPS
+  return (config as MapConfig).value_change_color_stops
+}
+
+function colorCenterForMode(config: MapConfig | ValuationMapConfig, mode: MapDisplayMode): number {
+  return mode === 'valuation_ratio' ? 1 : (config as MapConfig).county_avg_value_change_pct
+}
+
+type PmtilesMapConfig = (MapConfig | ValuationMapConfig) & {
+  mode: 'pmtiles'
+  pmtiles_url: string
+  source_layer: string
+}
+
+function isPmtilesConfig(
+  config: MapConfig | ValuationMapConfig
+): config is PmtilesMapConfig {
+  return config.mode === 'pmtiles' && Boolean(config.pmtiles_url)
+}
+
+function circlePaint(mode: MapDisplayMode, stops: MapColorStop[], center: number) {
+  const colorExpr =
+    mode === 'valuation_ratio'
+      ? valuationRatioColorExpression('valuation_ratio')
+      : valueChangeColorExpression('value_change_pct', stops, center)
   return {
-    'circle-color': valueChangeColorExpression(
-      'value_change_pct',
-      stops,
-      countyAveragePct
-    ) as DataDrivenPropertyValueSpecification<string>,
+    'circle-color': colorExpr as DataDrivenPropertyValueSpecification<string>,
     'circle-radius': [
       'interpolate',
       ['linear'],
       ['zoom'],
       9,
-      1.5,
+      2,
       12,
-      3,
+      4,
       14,
-      5,
+      6,
       16,
       8,
     ],
@@ -65,31 +122,56 @@ function circlePaint(
   }
 }
 
+type ParcelLayerOptions = {
+  fillLayerId: string
+  highlightLayerId: string
+  sourceId: string
+  sourceLayer?: string
+  minzoom?: number
+  maxzoom?: number
+}
+
 function addParcelLayers(
   map: MapLibreMap,
-  config: MapConfig,
-  sourceId: string,
-  sourceLayer?: string
+  mode: MapDisplayMode,
+  stops: MapColorStop[],
+  center: number,
+  options: ParcelLayerOptions
 ) {
+  const { fillLayerId, highlightLayerId, sourceId, sourceLayer, minzoom, maxzoom } = options
   const layer: maplibregl.CircleLayerSpecification = {
-    id: 'parcels-fill',
+    id: fillLayerId,
     type: 'circle',
     source: sourceId,
-    paint: circlePaint(
-      config.value_change_color_stops,
-      config.county_avg_value_change_pct
-    ) as maplibregl.CircleLayerSpecification['paint'],
+    paint: circlePaint(mode, stops, center) as maplibregl.CircleLayerSpecification['paint'],
   }
   if (sourceLayer) {
     layer['source-layer'] = sourceLayer
   }
+  if (minzoom != null) {
+    layer.minzoom = minzoom
+  }
+  if (maxzoom != null) {
+    layer.maxzoom = maxzoom
+  }
+  if (mode === 'valuation_ratio') {
+    // Old tiles without valuation_ratio still render (default color); hide explicit sentinels only.
+    layer.filter = [
+      'case',
+      ['has', 'valuation_ratio'],
+      ['>', ['to-number', ['get', 'valuation_ratio']], -9998],
+      true,
+    ]
+  }
   map.addLayer(layer)
 
   map.addLayer({
-    id: 'parcels-highlight',
+    id: highlightLayerId,
     type: 'circle',
     source: sourceId,
     ...(sourceLayer ? { 'source-layer': sourceLayer } : {}),
+    ...(minzoom != null ? { minzoom } : {}),
+    ...(maxzoom != null ? { maxzoom } : {}),
     paint: {
       'circle-radius': [
         'interpolate',
@@ -111,9 +193,70 @@ function addParcelLayers(
   })
 }
 
+function setupLowZoomParcelSampling(
+  map: MapLibreMap,
+  mode: MapDisplayMode,
+  onDataError: ((message: string | null) => void) | undefined,
+  loadGenerationRef: { current: number },
+  loadTimerRef: { current: number | null },
+  abortRef: { current: AbortController | null },
+  onlyBelowDetailZoom: boolean
+) {
+  const loadViewport = () => {
+    if (onlyBelowDetailZoom && map.getZoom() >= PMTILES_DETAIL_MIN_ZOOM) return
+
+    const generation = ++loadGenerationRef.current
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    const bounds = padBounds(map.getBounds(), 0.15)
+    const zoom = map.getZoom()
+    const fetchParcels = mode === 'valuation_ratio' ? getMapValuationParcels : getMapParcels
+    const params: Parameters<typeof getMapParcels>[0] = {
+      west: bounds.west,
+      south: bounds.south,
+      east: bounds.east,
+      north: bounds.north,
+      zoom,
+    }
+    params.limit = sampleLimitForZoom(zoom)
+
+    fetchParcels(
+      params,
+      controller.signal
+    )
+      .then((collection) => {
+        if (generation !== loadGenerationRef.current) return
+        const sourceId = onlyBelowDetailZoom ? 'parcels-sample' : 'parcels'
+        const source = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined
+        source?.setData(collection)
+        onDataError?.(null)
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        if (generation !== loadGenerationRef.current) return
+        console.error('Failed to load parcel points for map viewport', err)
+        onDataError?.('Could not load parcel dots. Try refreshing or zooming in.')
+      })
+  }
+
+  const scheduleLoad = () => {
+    if (loadTimerRef.current != null) {
+      window.clearTimeout(loadTimerRef.current)
+    }
+    loadTimerRef.current = window.setTimeout(loadViewport, 120)
+  }
+
+  loadViewport()
+  map.on('moveend', scheduleLoad)
+  map.on('zoomend', scheduleLoad)
+}
+
 function bindParcelInteractions(
   map: MapLibreMap,
-  countyAveragePct: number,
+  mode: MapDisplayMode,
+  colorCenter: number,
   onParcelFocus?: (parcel: FocusedParcel) => void
 ) {
   const hoverPopup = new maplibregl.Popup({
@@ -129,60 +272,95 @@ function bindParcelInteractions(
     className: 'map-popup',
   })
 
-  map.on('mousemove', 'parcels-fill', (event: MapLayerMouseEvent) => {
+  const onMouseMove = (event: MapLayerMouseEvent) => {
     map.getCanvas().style.cursor = 'pointer'
     const feature = event.features?.[0]
     if (!feature) return
     const props = feature.properties as Record<string, string | number | null>
-    const pct = props.value_change_pct
-    const relPct = typeof pct === 'number' ? pct - countyAveragePct : null
-    const pctText =
-      pct == null || pct === -9999
-        ? 'n/a'
-        : `${Number(pct) > 0 ? '+' : ''}${Number(pct).toFixed(1)}%`
-    const relText =
-      relPct == null ? 'n/a' : `${relPct > 0 ? '+' : ''}${relPct.toFixed(1)} pp vs county avg`
+    let detailHtml = ''
+    if (mode === 'valuation_ratio') {
+      const vr = parseMapNumericProp(props.valuation_ratio)
+      detailHtml = `Valuation ratio: ${formatValuationRatio(vr)} (1.0 = county median)`
+    } else {
+      const pct = parseMapNumericProp(props.value_change_pct)
+      const relPct = pct == null ? null : pct - colorCenter
+      const pctText =
+        pct == null ? 'n/a' : `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`
+      const relText =
+        relPct == null ? 'n/a' : `${relPct > 0 ? '+' : ''}${relPct.toFixed(1)} pp vs county avg`
+      detailHtml = `Assessment change: ${pctText}<br/>Relative to county: ${relText}`
+    }
     hoverPopup
       .setLngLat(event.lngLat)
       .setHTML(
         `<strong>${props.address_display ?? props.municipality ?? 'Home'}</strong><br/>` +
-          `Assessment change: ${pctText}<br/>Relative to county: ${relText}`
+          detailHtml
       )
       .addTo(map)
-  })
+  }
 
-  map.on('mouseleave', 'parcels-fill', () => {
+  const onMouseLeave = () => {
     map.getCanvas().style.cursor = ''
     hoverPopup.remove()
-  })
+  }
 
-  map.on('click', 'parcels-fill', (event: MapLayerMouseEvent) => {
+  const onClick = (event: MapLayerMouseEvent) => {
     const feature = event.features?.[0]
     const props = (feature?.properties ?? {}) as Record<string, string | number | null>
     const parcelId = props.parcel_id
-    if (typeof parcelId !== 'string') return
-    const pct =
-      typeof props.value_change_pct === 'number' ? props.value_change_pct : null
-    const relPct = pct == null ? null : pct - countyAveragePct
-    const pctText =
-      pct == null || pct === -9999 ? 'n/a' : `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`
-    const relText =
-      relPct == null ? 'n/a' : `${relPct > 0 ? '+' : ''}${relPct.toFixed(1)} pp vs county avg`
+    if (parcelId == null || parcelId === '') return
+    const parcelIdStr = String(parcelId)
+
+    hoverPopup.remove()
+
+    let detailHtml = ''
+    let valueChangePct: number | null = null
+    let valuationRatio: number | null = null
+
+    if (mode === 'valuation_ratio') {
+      valuationRatio = parseMapNumericProp(props.valuation_ratio)
+      detailHtml = `Valuation ratio: ${formatValuationRatio(valuationRatio)} (1.0 = county median)<br/>`
+    } else {
+      const pct = parseMapNumericProp(props.value_change_pct)
+      valueChangePct = pct
+      const relPct = pct == null ? null : pct - colorCenter
+      const pctText = pct == null ? 'n/a' : `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`
+      const relText =
+        relPct == null ? 'n/a' : `${relPct > 0 ? '+' : ''}${relPct.toFixed(1)} pp vs county avg`
+      detailHtml = `Assessment change: ${pctText}<br/>Relative to county: ${relText}<br/>`
+    }
+
+    setParcelHighlightFilter(map, parcelIdStr)
+
     focusPopup
       .setLngLat(event.lngLat)
       .setHTML(
         `<strong>${props.address_display ?? props.municipality ?? 'Home'}</strong><br/>` +
-          `Assessment change: ${pctText}<br/>Relative to county: ${relText}<br/>` +
-          `<a href="/home/${encodeURIComponent(parcelId)}">Expand full property details</a>`
+          detailHtml +
+          `<a href="/home/${encodeURIComponent(parcelIdStr)}">Expand full property details</a>`
       )
       .addTo(map)
+
+    map.easeTo({
+      center: event.lngLat,
+      zoom: Math.max(map.getZoom(), 14),
+      duration: 700,
+    })
+
     onParcelFocus?.({
-      parcelId,
+      parcelId: parcelIdStr,
       addressDisplay: typeof props.address_display === 'string' ? props.address_display : undefined,
       municipality: typeof props.municipality === 'string' ? props.municipality : undefined,
-      valueChangePct: pct,
+      valueChangePct,
+      valuationRatio,
     })
-  })
+  }
+
+  for (const layerId of ['parcels-fill', 'parcels-fill-tiles', 'parcels-fill-sample']) {
+    map.on('mousemove', layerId, onMouseMove)
+    map.on('mouseleave', layerId, onMouseLeave)
+    map.on('click', layerId, onClick)
+  }
 }
 
 function padBounds(bounds: maplibregl.LngLatBounds, fraction: number) {
@@ -200,38 +378,55 @@ function padBounds(bounds: maplibregl.LngLatBounds, fraction: number) {
   }
 }
 
-function applyParcelHighlight(map: MapLibreMap, parcelId?: string) {
-  if (!map.getLayer('parcels-highlight')) return
-  map.setFilter('parcels-highlight', ['==', ['get', 'parcel_id'], parcelId ?? ''])
-  if (!parcelId) return
-  const featureUrl = `/api/map/parcels/${encodeURIComponent(parcelId)}`
-  fetch(featureUrl)
+function setParcelHighlightFilter(map: MapLibreMap, parcelId: string | undefined) {
+  const filter: maplibregl.FilterSpecification = ['==', ['get', 'parcel_id'], parcelId ?? '']
+  for (const layerId of ['parcels-highlight', 'parcels-highlight-tiles', 'parcels-highlight-sample']) {
+    if (map.getLayer(layerId)) {
+      map.setFilter(layerId, filter)
+    }
+  }
+}
+
+function easeToParcelById(map: MapLibreMap, parcelId: string, mode: MapDisplayMode) {
+  const base =
+    mode === 'valuation_ratio' ? '/api/map/valuation/parcels' : '/api/map/parcels'
+  const featureUrl = `${base}/${encodeURIComponent(parcelId)}`
+  return fetch(featureUrl)
     .then((res) => (res.ok ? res.json() : null))
     .then((feature) => {
       if (!feature?.geometry?.coordinates) return
-      map.flyTo({
-        center: feature.geometry.coordinates as [number, number],
-        zoom: Math.max(map.getZoom(), 15),
-        duration: 900,
+      const center = feature.geometry.coordinates as [number, number]
+      map.easeTo({
+        center,
+        zoom: Math.max(map.getZoom(), 14),
+        duration: 700,
       })
+      return center
     })
     .catch(() => undefined)
 }
 
 export function ParcelMap({
   config,
+  displayMode,
   highlightParcelId,
   onParcelFocus,
   onDataError,
   initialCenter,
   initialZoom,
   maxBoundsOverride,
+  ariaLabel = 'Neighborhood map',
 }: ParcelMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const loadTimerRef = useRef<number | null>(null)
   const loadGenerationRef = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
+
+  const mode = resolveDisplayMode(config, displayMode)
+  const stops = useMemo(() => colorStopsForMode(config, mode), [config, mode])
+  const colorCenter = colorCenterForMode(config, mode)
+  const usePmtiles = isPmtilesConfig(config)
 
   useEffect(() => {
     if (!containerRef.current || config.mode === 'unavailable') return
@@ -242,21 +437,8 @@ export function ParcelMap({
       container: containerRef.current,
       style: {
         version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
-        },
-        layers: [
-          {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-          },
-        ],
+        sources: BASEMAP_STYLE_SOURCES,
+        layers: [basemapRasterLayer()],
       },
       center: initialCenter ?? config.center,
       zoom: initialZoom ?? 10,
@@ -272,66 +454,63 @@ export function ParcelMap({
     mapRef.current = map
 
     map.on('load', () => {
-      if (config.mode === 'pmtiles' && config.pmtiles_url) {
-        map.addSource('parcels', {
+      if (usePmtiles) {
+        map.addSource('parcels-tiles', {
           type: 'vector',
           url: `pmtiles://${window.location.origin}${config.pmtiles_url}`,
         })
-        addParcelLayers(map, config, 'parcels', config.source_layer)
+        map.addSource('parcels-sample', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        })
+        addParcelLayers(map, mode, stops, colorCenter, {
+          fillLayerId: 'parcels-fill-tiles',
+          highlightLayerId: 'parcels-highlight-tiles',
+          sourceId: 'parcels-tiles',
+          sourceLayer: config.source_layer,
+          minzoom: PMTILES_DETAIL_MIN_ZOOM,
+        })
+        addParcelLayers(map, mode, stops, colorCenter, {
+          fillLayerId: 'parcels-fill-sample',
+          highlightLayerId: 'parcels-highlight-sample',
+          sourceId: 'parcels-sample',
+          maxzoom: PMTILES_DETAIL_MIN_ZOOM,
+        })
+        setupLowZoomParcelSampling(
+          map,
+          mode,
+          onDataError,
+          loadGenerationRef,
+          loadTimerRef,
+          abortRef,
+          true
+        )
       } else if (config.mode === 'points') {
         map.addSource('parcels', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] },
         })
-        addParcelLayers(map, config, 'parcels')
-
-        const loadViewport = () => {
-          const generation = ++loadGenerationRef.current
-          abortRef.current?.abort()
-          const controller = new AbortController()
-          abortRef.current = controller
-
-          const bounds = padBounds(map.getBounds(), 0.15)
-          const zoom = map.getZoom()
-
-          getMapParcels(
-            {
-              west: bounds.west,
-              south: bounds.south,
-              east: bounds.east,
-              north: bounds.north,
-              zoom,
-            },
-            controller.signal
-          )
-            .then((collection) => {
-              if (generation !== loadGenerationRef.current) return
-              const source = map.getSource('parcels') as maplibregl.GeoJSONSource | undefined
-              source?.setData(collection)
-              onDataError?.(null)
-            })
-            .catch((err: unknown) => {
-              if (err instanceof DOMException && err.name === 'AbortError') return
-              if (generation !== loadGenerationRef.current) return
-              console.error('Failed to load parcel points for map viewport', err)
-              onDataError?.('Could not load parcel dots. Try refreshing or zooming in.')
-            })
-        }
-
-        const scheduleLoad = () => {
-          if (loadTimerRef.current != null) {
-            window.clearTimeout(loadTimerRef.current)
-          }
-          loadTimerRef.current = window.setTimeout(loadViewport, 120)
-        }
-
-        loadViewport()
-        map.on('moveend', scheduleLoad)
-        map.on('zoomend', scheduleLoad)
+        addParcelLayers(map, mode, stops, colorCenter, {
+          fillLayerId: 'parcels-fill',
+          highlightLayerId: 'parcels-highlight',
+          sourceId: 'parcels',
+        })
+        setupLowZoomParcelSampling(
+          map,
+          mode,
+          onDataError,
+          loadGenerationRef,
+          loadTimerRef,
+          abortRef,
+          false
+        )
       }
 
-      bindParcelInteractions(map, config.county_avg_value_change_pct, onParcelFocus)
-      applyParcelHighlight(map, highlightParcelId)
+      bindParcelInteractions(map, mode, colorCenter, onParcelFocus)
+      setParcelHighlightFilter(map, highlightParcelId)
+      if (highlightParcelId) {
+        void easeToParcelById(map, highlightParcelId, mode)
+      }
     })
 
     return () => {
@@ -345,6 +524,10 @@ export function ParcelMap({
     }
   }, [
     config,
+    mode,
+    stops,
+    colorCenter,
+    usePmtiles,
     initialCenter,
     initialZoom,
     maxBoundsOverride,
@@ -355,8 +538,13 @@ export function ParcelMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    applyParcelHighlight(map, highlightParcelId)
-  }, [highlightParcelId])
+    const apply = () => setParcelHighlightFilter(map, highlightParcelId)
+    if (map.isStyleLoaded()) {
+      apply()
+    } else {
+      map.once('load', apply)
+    }
+  }, [highlightParcelId, mode])
 
-  return <div className="parcel-map" ref={containerRef} aria-label="Neighborhood map" />
+  return <div className="parcel-map" ref={containerRef} aria-label={ariaLabel} />
 }

@@ -1,4 +1,13 @@
-import type { MapConfig, MapHexbinCollection, MapParcelCollection, MapParcelFeature } from './map/types'
+import type {
+  MapConfig,
+  MapHexbinCollection,
+  MapParcelCollection,
+  MapParcelFeature,
+  ValuationMapConfig,
+  ValuationMapHexbinCollection,
+  ValuationMapParcelCollection,
+  ValuationMapParcelFeature,
+} from './map/types'
 import type { CountySummary, Manifest, Parcel, PropertyTaxes, SearchResult } from './types'
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -78,6 +87,62 @@ export function getMapHexbins(params?: {
   }
   const suffix = query.toString() ? `?${query}` : ''
   return fetchJson(`/api/map/hexbins${suffix}`)
+}
+
+export function getValuationMapConfig(): Promise<ValuationMapConfig> {
+  return fetchJson('/api/map/valuation/config')
+}
+
+export function getValuationMapParcelFeature(
+  parcelId: string
+): Promise<ValuationMapParcelFeature> {
+  return fetchJson(`/api/map/valuation/parcels/${encodeURIComponent(parcelId)}`)
+}
+
+export async function getMapValuationParcels(
+  params: {
+    west: number
+    south: number
+    east: number
+    north: number
+    zoom?: number
+    limit?: number
+  },
+  signal?: AbortSignal
+): Promise<ValuationMapParcelCollection> {
+  const query = new URLSearchParams({
+    west: String(params.west),
+    south: String(params.south),
+    east: String(params.east),
+    north: String(params.north),
+  })
+  if (params.zoom != null) {
+    query.set('zoom', String(params.zoom))
+  }
+  if (params.limit != null) {
+    query.set('limit', String(params.limit))
+  }
+  const res = await fetch(`/api/map/valuation/parcels?${query}`, { signal })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(body || res.statusText)
+  }
+  return res.json() as Promise<ValuationMapParcelCollection>
+}
+
+export function getValuationMapHexbins(params?: {
+  hex_size_deg?: number
+  min_count?: number
+}): Promise<ValuationMapHexbinCollection> {
+  const query = new URLSearchParams()
+  if (params?.hex_size_deg != null) {
+    query.set('hex_size_deg', String(params.hex_size_deg))
+  }
+  if (params?.min_count != null) {
+    query.set('min_count', String(params.min_count))
+  }
+  const suffix = query.toString() ? `?${query}` : ''
+  return fetchJson(`/api/map/valuation/hexbins${suffix}`)
 }
 
 export type HomesteadExemptionEntry = {
