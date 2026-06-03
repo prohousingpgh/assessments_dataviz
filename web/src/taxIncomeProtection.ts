@@ -1,3 +1,4 @@
+import { additionalTaxTotal } from './taxBreakdown'
 import type { PropertyTaxes, TaxScenarioBreakdown } from './types'
 
 /** Max county tax after reassessment = 150% of today's county tax (50% increase cap). */
@@ -35,7 +36,8 @@ function capCountyFuture(
   const futureTotal =
     cappedCountyFut +
     taxes.future.municipality.annual_tax +
-    taxes.future.school.annual_tax
+    taxes.future.school.annual_tax +
+    additionalTaxTotal(taxes.future)
   const delta = futureTotal - taxes.current.total
   const deltaPct =
     taxes.current.total > 0 ? (delta / taxes.current.total) * 100 : null
@@ -77,7 +79,10 @@ function capScenario(
   }
 
   const futureTotal =
-    cappedCountyFut + scen.municipality.annual_tax + scen.school.annual_tax
+    cappedCountyFut +
+    scen.municipality.annual_tax +
+    scen.school.annual_tax +
+    (scen.additional ?? []).reduce((sum, line) => sum + line.annual_tax, 0)
   const delta = futureTotal - currentTotal
   const deltaPct = currentTotal > 0 ? (delta / currentTotal) * 100 : null
 
@@ -134,6 +139,7 @@ export function applyIncomeProtection(
             county: baseline.county,
             municipality: baseline.municipality,
             school: baseline.school,
+            additional: baseline.additional,
             total: baseline.total,
           }
         : working.future,

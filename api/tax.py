@@ -23,7 +23,12 @@ from api.tax_aggregates import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-MILLAGE_PATH = ROOT / "data" / "millage_2025.json"
+MILLAGE_PATH = ROOT / "data" / "millage_2026.json"
+PITTSBURGH_MUNICIPALITY_KEY = "City of Pittsburgh"
+DEFAULT_PITTSBURGH_ADDITIONAL_MILLS = (
+    {"id": "parks", "label": "Pittsburgh Parks Tax", "mills": 0.5},
+    {"id": "library", "label": "Pittsburgh Library Tax", "mills": 0.25},
+)
 
 _config: dict[str, Any] | None = None
 _db_connection: Any = None
@@ -95,6 +100,44 @@ def _effective_future_mills(
     return nominal_mills * factor
 
 
+def _is_city_of_pittsburgh(municipality: str | None, muni_key: str | None) -> bool:
+    if muni_key == PITTSBURGH_MUNICIPALITY_KEY:
+        return True
+    if not municipality:
+        return False
+    norm = municipality.strip().lower()
+    return norm in {"city of pittsburgh", "pittsburgh"}
+
+
+def _pittsburgh_additional_entries(cfg: dict[str, Any]) -> list[dict[str, Any]]:
+    configured = cfg.get("municipality_additional_mills", {}).get(PITTSBURGH_MUNICIPALITY_KEY)
+    if isinstance(configured, list) and configured:
+        return configured
+    return list(DEFAULT_PITTSBURGH_ADDITIONAL_MILLS)
+
+
+def _additional_tax_lines(
+    entries: list[dict[str, Any]],
+    taxable_current: float,
+    taxable_future: float,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], float, float]:
+    current_lines: list[dict[str, Any]] = []
+    future_lines: list[dict[str, Any]] = []
+    current_total = 0.0
+    future_total = 0.0
+    for entry in entries:
+        label = str(entry.get("label", "Additional tax"))
+        mills = float(entry["mills"])
+        mills_label = entry.get("id") or label
+        cur_amount = _mill_tax(taxable_current, mills)
+        fut_amount = _mill_tax(taxable_future, mills)
+        current_lines.append(_line(label, taxable_current, mills, cur_amount, mills_label))
+        future_lines.append(_line(label, taxable_future, mills, fut_amount, mills_label))
+        current_total += cur_amount
+        future_total += fut_amount
+    return current_lines, future_lines, current_total, future_total
+
+
 def _line(
     label: str,
     taxable: float,
@@ -137,6 +180,7 @@ def _compute_future_breakdown(
     school_key: str | None,
     municipality: str | None,
     school_district: str | None,
+    additional_future_entries: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     county_factor, _ = get_revenue_neutral_factor(
         aggregates, "county", "Allegheny County", scenario=scenario
@@ -155,9 +199,30 @@ def _compute_future_breakdown(
     county_fut = _mill_tax(county_taxable_fut, county_mills_future)
     muni_fut = _mill_tax(local_taxable_fut_muni, muni_mills_future)
     school_fut = _mill_tax(local_taxable_fut_school, school_mills_future)
-    total = county_fut + muni_fut + school_fut
+    additional_future: list[dict[str, Any]] = []
+    additional_future_total = 0.0
+    for entry in additional_future_entries or []:
+        nominal_mills = float(entry["mills"])
+        mills_future = _effective_future_mills(nominal_mills, muni_factor)
+        label = str(entry.get("label", "Additional tax"))
+        mills_label = entry.get("id") or label
+        amount = _mill_tax(local_taxable_fut_muni, mills_future)
+        additional_future.append(
+            _line(
+                label,
+                local_taxable_fut_muni,
+                mills_future,
+                amount,
+                mills_label,
+                nominal_mills=nominal_mills,
+                revenue_neutral_factor=muni_factor,
+                scenario=scenario,
+            )
+        )
+        additional_future_total += amount
+    total = county_fut + muni_fut + school_fut + additional_future_total
 
-    return {
+    result = {
         "county": _line(
             "Allegheny County",
             county_taxable_fut,
@@ -195,6 +260,9 @@ def _compute_future_breakdown(
             "school_district": school_factor,
         },
     }
+    if additional_future:
+        result["additional"] = additional_future
+    return result
 
 
 def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
@@ -270,10 +338,25 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     local_taxable_cur_school = _homestead_taxable(local_current, homestead_flag, school_excl_cur)
     local_taxable_fut_school = _homestead_taxable(local_future, homestead_flag, school_excl_fut)
 
+    pittsburgh_additional = (
+        _pittsburgh_additional_entries(cfg)
+        if _is_city_of_pittsburgh(municipality, muni_key)
+        else []
+    )
+    additional_current, _, additional_cur_total, _ = (
+        _additional_tax_lines(
+            pittsburgh_additional,
+            local_taxable_cur_muni,
+            local_taxable_fut_muni,
+        )
+        if pittsburgh_additional
+        else ([], [], 0.0, 0.0)
+    )
+
     county_cur = _mill_tax(county_taxable_cur, county_mills)
     muni_cur = _mill_tax(local_taxable_cur_muni, muni_mills)
     school_cur = _mill_tax(local_taxable_cur_school, school_mills)
-    current_total = county_cur + muni_cur + school_cur
+    current_total = county_cur + muni_cur + school_cur + additional_cur_total
 
     if fmv_current > 0 and fmv_future > 0:
         parcel_residential_growth = (fmv_future - fmv_current) / fmv_current
@@ -313,11 +396,12 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
             school_key=school_key,
             municipality=municipality,
             school_district=school_district,
+            additional_future_entries=pittsburgh_additional,
         )
         fut_total = future_breakdown["total"]
         delta = fut_total - current_total
         delta_pct = (delta / current_total * 100) if current_total > 0 else None
-        future_scenarios[scenario] = {
+        scenario_payload: dict[str, Any] = {
             "id": scenario,
             "label": SCENARIO_LABELS.get(scenario, scenario),
             "short_label": SCENARIO_SHORT_LABELS.get(scenario, scenario),
@@ -332,6 +416,9 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
             },
             "jurisdiction_factors": future_breakdown["factors"],
         }
+        if future_breakdown.get("additional"):
+            scenario_payload["additional"] = future_breakdown["additional"]
+        future_scenarios[scenario] = scenario_payload
 
     default_scenario = aggregates.get("default_scenario", "baseline")
     if default_scenario not in future_scenarios:
@@ -339,7 +426,7 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     baseline = future_scenarios[default_scenario]
 
     notes = [
-        "Estimated annual liability using 2025 nominal millage; not actual payments.",
+        f"Estimated annual liability using {cfg.get('tax_year', 2026)} nominal millage; not actual payments.",
         "After reassessment, millage is adjusted within each jurisdiction so total tax revenue stays the same (revenue-neutral reassessment), including existing commercial assessed values.",
         "Commercial reassessment is not modeled; use the slider on the parcel page to set "
         "aggregate commercial assessment growth (defaults to countywide average residential growth).",
@@ -348,6 +435,34 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
         "Homestead (HOM): per-jurisdiction Act 50 exclusions (see /homestead-exemptions); "
         "after reassessment exclusions scale by countywide residential assessed-value growth (nearest $1,000).",
     ]
+    if pittsburgh_additional:
+        notes.append(
+            "City of Pittsburgh properties include separate Parks (0.5 mills) and Library (0.25 mills) "
+            "levies on local taxable value; after reassessment these millages are scaled with the "
+            "municipality revenue-neutral factor like city general millage."
+        )
+
+    current_breakdown: dict[str, Any] = {
+        "county": _line("Allegheny County", county_taxable_cur, county_mills, county_cur, "Allegheny County"),
+        "municipality": _line(
+            municipality_label, local_taxable_cur_muni, muni_mills, muni_cur, muni_key
+        ),
+        "school": _line(
+            school_label, local_taxable_cur_school, school_mills, school_cur, school_key
+        ),
+        "total": round(current_total, 2),
+    }
+    if additional_current:
+        current_breakdown["additional"] = additional_current
+
+    future_breakdown_default: dict[str, Any] = {
+        "county": baseline["county"],
+        "municipality": baseline["municipality"],
+        "school": baseline["school"],
+        "total": baseline["total"],
+    }
+    if baseline.get("additional"):
+        future_breakdown_default["additional"] = baseline["additional"]
 
     return {
         "tax_year": cfg.get("tax_year"),
@@ -369,22 +484,8 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
         "county_avg_residential_growth_rate": county_avg_residential_growth,
         "revenue_neutral_bases": revenue_neutral_bases,
         "default_scenario": default_scenario,
-        "current": {
-            "county": _line("Allegheny County", county_taxable_cur, county_mills, county_cur, "Allegheny County"),
-            "municipality": _line(
-                municipality_label, local_taxable_cur_muni, muni_mills, muni_cur, muni_key
-            ),
-            "school": _line(
-                school_label, local_taxable_cur_school, school_mills, school_cur, school_key
-            ),
-            "total": round(current_total, 2),
-        },
-        "future": {
-            "county": baseline["county"],
-            "municipality": baseline["municipality"],
-            "school": baseline["school"],
-            "total": baseline["total"],
-        },
+        "current": current_breakdown,
+        "future": future_breakdown_default,
         "delta": baseline["delta"],
         "future_scenarios": future_scenarios,
         "jurisdiction_factors": baseline.get("jurisdiction_factors", {}),

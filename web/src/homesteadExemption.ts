@@ -1,3 +1,9 @@
+import {
+  buildScaledAdditionalLines,
+  mapAdditionalLines,
+  municipalityRevenueNeutralFactor,
+  withBreakdownTotal,
+} from './taxBreakdown'
 import type { Parcel, PropertyTaxes, TaxBreakdown, TaxLine, TaxScenarioBreakdown } from './types'
 
 export const HOMESTEAD_EXCLUSION = 18_000
@@ -118,7 +124,9 @@ function buildAdjustedBreakdown(
   muniLineCur: TaxLine,
   muniLineFut: TaxLine,
   schoolLineCur: TaxLine,
-  schoolLineFut: TaxLine
+  schoolLineFut: TaxLine,
+  additionalLines?: TaxLine[],
+  additionalFutureLines?: TaxLine[]
 ): { current: TaxBreakdown; future: TaxBreakdown; delta: PropertyTaxes['delta'] } {
   const curFmv = parcel.current_assessment_total ?? 0
   const futFmv = parcel.new_assessment_total ?? 0
@@ -159,26 +167,45 @@ function buildAdjustedBreakdown(
     schoolLineFut.mills
   )
 
-  const currentTotal =
-    countyCur.annual_tax + muniCur.annual_tax + schoolCur.annual_tax
-  const futureTotal =
-    countyFut.annual_tax + muniFut.annual_tax + schoolFut.annual_tax
+  const additionalCurLines = mapAdditionalLines(
+    additionalLines,
+    homesteadTaxable(localCurAssessed, enabled, exclusions.municipality.current)
+  )
+  const localFutTaxable = homesteadTaxable(
+    localFutAssessed,
+    enabled,
+    exclusions.municipality.future
+  )
+  const muniRnFactor = municipalityRevenueNeutralFactor(muniLineCur, muniLineFut)
+  const additionalFutLines =
+    additionalFutureLines && additionalFutureLines.length > 0
+      ? additionalFutureLines.map((line) =>
+          updateLine(line, localFutTaxable, line.mills)
+        )
+      : buildScaledAdditionalLines(additionalLines, localFutTaxable, muniRnFactor)
+
+  const current = withBreakdownTotal({
+    county: countyCur,
+    municipality: muniCur,
+    school: schoolCur,
+    additional: additionalCurLines,
+    total: 0,
+  })
+  const future = withBreakdownTotal({
+    county: countyFut,
+    municipality: muniFut,
+    school: schoolFut,
+    additional: additionalFutLines,
+    total: 0,
+  })
+  const currentTotal = current.total
+  const futureTotal = future.total
   const delta = futureTotal - currentTotal
   const deltaPct = currentTotal > 0 ? (delta / currentTotal) * 100 : null
 
   return {
-    current: {
-      county: countyCur,
-      municipality: muniCur,
-      school: schoolCur,
-      total: roundMoney(currentTotal),
-    },
-    future: {
-      county: countyFut,
-      municipality: muniFut,
-      school: schoolFut,
-      total: roundMoney(futureTotal),
-    },
+    current,
+    future,
     delta: {
       total_dollars: roundMoney(delta),
       total_percent: deltaPct != null ? roundMoney(deltaPct) : null,
@@ -191,7 +218,8 @@ function adjustScenario(
   parcel: Parcel,
   enabled: boolean,
   exclusions: HomesteadExclusions,
-  currentTotal: number
+  currentTotal: number,
+  currentAdditional?: TaxLine[]
 ): TaxScenarioBreakdown {
   const curFmv = parcel.current_assessment_total ?? 0
   const futFmv = parcel.new_assessment_total ?? 0
@@ -213,8 +241,27 @@ function adjustScenario(
     homesteadTaxable(localFutAssessed, enabled, exclusions.school.future),
     scen.school.mills
   )
-  const futureTotal =
-    countyFut.annual_tax + muniFut.annual_tax + schoolFut.annual_tax
+  const localFutTaxable = homesteadTaxable(
+    localFutAssessed,
+    enabled,
+    exclusions.municipality.future
+  )
+  const muniRnFactor = municipalityRevenueNeutralFactor(
+    { mills: scen.municipality.mills_nominal ?? scen.municipality.mills } as TaxLine,
+    scen.municipality
+  )
+  const additionalFut =
+    scen.additional && scen.additional.length > 0
+      ? scen.additional.map((line) => updateLine(line, localFutTaxable, line.mills))
+      : buildScaledAdditionalLines(currentAdditional, localFutTaxable, muniRnFactor)
+  const future = withBreakdownTotal({
+    county: countyFut,
+    municipality: muniFut,
+    school: schoolFut,
+    additional: additionalFut,
+    total: 0,
+  })
+  const futureTotal = future.total
   const delta = futureTotal - currentTotal
   const deltaPct = currentTotal > 0 ? (delta / currentTotal) * 100 : null
 
@@ -223,6 +270,7 @@ function adjustScenario(
     county: countyFut,
     municipality: muniFut,
     school: schoolFut,
+    additional: additionalFut.length > 0 ? additionalFut : undefined,
     total: roundMoney(futureTotal),
     delta: {
       total_dollars: roundMoney(delta),
@@ -253,7 +301,9 @@ export function applyHomesteadExemption(
     taxes.current.municipality,
     taxes.future.municipality,
     taxes.current.school,
-    taxes.future.school
+    taxes.future.school,
+    taxes.current.additional,
+    taxes.future.additional
   )
 
   let futureScenarios = taxes.future_scenarios
@@ -265,7 +315,8 @@ export function applyHomesteadExemption(
         parcel,
         enabled,
         exclusions,
-        baseline.current.total
+        baseline.current.total,
+        taxes.current.additional
       )
     }
     futureScenarios = updated
@@ -292,6 +343,7 @@ export function applyHomesteadExemption(
           county: defaultScen.county,
           municipality: defaultScen.municipality,
           school: defaultScen.school,
+          additional: defaultScen.additional ?? baseline.future.additional,
           total: defaultScen.total,
         }
       : baseline.future,

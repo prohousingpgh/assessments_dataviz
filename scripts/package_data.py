@@ -22,6 +22,7 @@ RUNTIME_FILES = (
     "parcels.db",
     "manifest.json",
     "millage_2025.json",
+    "millage_2026.json",
     "tax_aggregates.json",
 )
 

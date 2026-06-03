@@ -4,6 +4,7 @@ import { getMapConfig, getMapParcelFeature, getParcel } from '../api'
 import type { CountySummary, Parcel, PropertyTaxes, TaxLine } from '../types'
 import { PageHeader } from '../components/PageHeader'
 import { TaxingBodyLabel, type TaxingBodyKind } from '../components/TaxingBodyLabel'
+import { futureAdditionalLine } from '../taxBreakdown'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { ParcelMap, type FocusedParcel } from '../map/ParcelMap'
 import type { MapConfig } from '../map/types'
@@ -392,6 +393,20 @@ export function ParcelPage() {
                 future={displayTaxes.future.municipality}
                 showTaxable={homesteadEnabled}
               />
+              {(displayTaxes.current.additional ?? []).map((line, index) => (
+                <TaxRow
+                  key={line.mills_label ?? line.label ?? index}
+                  kind="local"
+                  line={line}
+                  future={futureAdditionalLine(
+                    line,
+                    displayTaxes.future.additional?.[index],
+                    displayTaxes.current.municipality,
+                    displayTaxes.future.municipality
+                  )}
+                  showTaxable={homesteadEnabled}
+                />
+              ))}
               <TaxRow
                 kind="school"
                 line={displayTaxes.current.school}
@@ -518,25 +533,28 @@ function TaxRow({
   showTaxable?: boolean
 }) {
   const delta = future.annual_tax - line.annual_tax
-  const millsNote = formatMillsNote(line.mills, null)
-  const futureMillsNote = formatMillsNote(future.mills, future)
+  const currentMillsNote = formatCurrentMillsNote(line)
+  const futureMillsNote = formatFutureMillsNote(future)
 
   return (
     <tr>
       <th scope="row">
         <TaxingBodyLabel kind={kind} name={line.label}>
-          <span className="tax-mills-note">{millsNote}</span>
           {cappedFrom != null && (
             <span className="tax-cap-note">Income limit applied (county only)</span>
           )}
         </TaxingBodyLabel>
       </th>
       <td className="num" data-label="Today">
-        <span className="tax-cell-value">{formatMoney(line.annual_tax)}</span>
+        <div className="tax-cell-stack">
+          <span className="tax-cell-value">{formatMoney(line.annual_tax)}</span>
+          <span className="tax-mills-note">{currentMillsNote}</span>
+        </div>
       </td>
       <td className="num" data-label="After reassessment">
         <div className="tax-cell-stack">
           <span className="tax-cell-value">{formatMoney(future.annual_tax)}</span>
+          <span className="tax-mills-note">{futureMillsNote}</span>
           {showTaxable && (
             <span className="tax-mills-note">
               Taxable {formatMoney(line.taxable_value)} → {formatMoney(future.taxable_value)}
@@ -547,9 +565,6 @@ function TaxRow({
               Uncapped estimate {formatMoney(cappedFrom)}
             </span>
           )}
-          {cappedFrom == null && !showTaxable && futureMillsNote !== millsNote && (
-            <span className="tax-mills-note">{futureMillsNote}</span>
-          )}
         </div>
       </td>
       <td className="num" data-label="Change">
@@ -559,18 +574,20 @@ function TaxRow({
   )
 }
 
-function formatMillsNote(
-  effective: number | null | undefined,
-  line: TaxLine | null
-): string {
-  if (effective == null) return 'millage unavailable'
-  if (
-    line?.mills_nominal != null &&
-    line.revenue_neutral_factor != null &&
-    line.revenue_neutral_factor !== 1
-  ) {
-    return `${effective.toFixed(4)} mills (adjusted from ${line.mills_nominal.toFixed(4)})`
-  }
-  return `${effective.toFixed(4)} mills`
+function formatCurrentMillsNote(line: TaxLine): string {
+  const mills = line.mills_nominal ?? line.mills
+  if (mills == null) return 'Current millage: unavailable'
+  return `Current millage: ${formatMillsAmount(mills)} mills`
+}
+
+function formatFutureMillsNote(line: TaxLine): string {
+  const mills = line.mills
+  if (mills == null) return 'After reassessment: unavailable'
+  return `After reassessment: ${formatMillsAmount(mills)} mills`
+}
+
+function formatMillsAmount(mills: number | null | undefined): string {
+  if (mills == null) return '—'
+  return mills.toFixed(4).replace(/\.?0+$/, '')
 }
 

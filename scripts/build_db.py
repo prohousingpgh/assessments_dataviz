@@ -34,7 +34,7 @@ from homeowner_uses import is_homeowner_use  # noqa: E402
 DEFAULT_DB = ROOT / "data" / "parcels.db"
 DEFAULT_COMMERCIAL = ROOT / "data" / "commercial_existing_valuations.csv"
 MANIFEST_PATH = ROOT / "data" / "manifest.json"
-MILLAGE_PATH = ROOT / "data" / "millage_2025.json"
+MILLAGE_PATH = ROOT / "data" / "millage_2026.json"
 AGGREGATES_PATH = ROOT / "data" / "tax_aggregates.json"
 HOMESTEAD_EXCLUSION = 18_000
 COUNTY_JURISDICTION_NAME = "Allegheny County"

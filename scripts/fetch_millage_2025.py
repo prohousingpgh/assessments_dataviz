@@ -1,4 +1,4 @@
-"""Download 2025 millage tables from Allegheny County Treasurer and write data/millage_2025.json."""
+"""Download 2025 millage tables (legacy entry point; prefer scripts/fetch_millage.py)."""
 
 from __future__ import annotations
 
@@ -251,39 +251,12 @@ def parse_school_millage(html: str) -> dict[str, float]:
 
 
 def main() -> None:
-    muni_html = fetch_html("https://apps.alleghenycounty.us/website/MillMuni.asp?Year=2025")
-    school_html = fetch_html("https://apps.alleghenycounty.us/website/millsd.asp?Year=2025")
+    import subprocess
+    import sys
 
-    municipality_mills = parse_muni_millage(muni_html)
-    school_mills = parse_school_millage(school_html)
-
-    school_mills.update(
-        {
-            "Clairton": 10.0,
-            "Fort Cherry": 16.506,
-            "Penn-Trafford": 14.39,
-            # Norwin SD is mostly outside Allegheny; approximate for border parcels
-            "Norwin": 28.5,
-        }
+    subprocess.check_call(
+        [sys.executable, str(ROOT / "scripts" / "fetch_millage.py"), "--year", "2025"],
     )
-
-    payload = {
-        "tax_year": TAX_YEAR,
-        "county_mills": COUNTY_MILLS,
-        "homestead_exclusion": HOMESTEAD_EXCLUSION,
-        "municipality_mills": municipality_mills,
-        "school_mills": school_mills,
-        "municipality_aliases": MUNICIPALITY_ALIASES,
-        "school_aliases": SCHOOL_ALIASES,
-        "sources": {
-            "municipality": "https://apps.alleghenycounty.us/website/MillMuni.asp?Year=2025",
-            "school": "https://apps.alleghenycounty.us/website/millsd.asp?Year=2025",
-        },
-    }
-    OUT.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    print(f"Wrote {OUT}")
-    print(f"  {len(municipality_mills)} municipality millages")
-    print(f"  {len(school_mills)} school millages")
 
 
 if __name__ == "__main__":

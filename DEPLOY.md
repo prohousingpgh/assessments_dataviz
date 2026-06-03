@@ -100,7 +100,7 @@ Add the DNS records `fly certs show` prints. HTTPS is automatic.
 |--------|--------|
 | App code (UI/API) | Push to `main` (CI deploys) or `fly deploy` |
 | Predictions / assessments | Rebuild DB → new `data-*` release → push to `main` or `fly deploy` |
-| Millage only | `python scripts/fetch_millage_2025.py`, rebuild DB, new data release |
+| Millage only | `python scripts/fetch_millage.py --year 2026`, rebuild DB, new data release |
 
 ## Troubleshooting
 

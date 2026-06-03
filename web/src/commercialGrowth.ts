@@ -1,4 +1,5 @@
 import { formatPct } from './format'
+import { buildScaledAdditionalLines, withBreakdownTotal } from './taxBreakdown'
 import type {
   PropertyTaxes,
   RevenueNeutralBase,
@@ -328,14 +329,18 @@ export function applyCommercialGrowth(
     schoolFactor
   )
 
-  const future: TaxBreakdown = {
+  const additionalFut = buildScaledAdditionalLines(
+    taxes.current.additional,
+    muniFut.taxable_value,
+    muniFactor
+  )
+  const future: TaxBreakdown = withBreakdownTotal({
     county: countyFut,
     municipality: muniFut,
     school: schoolFut,
-    total: roundMoney(
-      countyFut.annual_tax + muniFut.annual_tax + schoolFut.annual_tax
-    ),
-  }
+    additional: additionalFut,
+    total: 0,
+  })
 
   const delta: TaxDelta = {
     total_dollars: roundMoney(future.total - taxes.current.total),

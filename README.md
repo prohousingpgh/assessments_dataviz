@@ -21,13 +21,14 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2. Download 2025 millage rates (once)
+### 2. Download millage rates (once per tax year)
 
 ```bash
-python scripts/fetch_millage_2025.py
+python scripts/fetch_millage.py --year 2026
+python scripts/fetch_millage.py --year 2025
 ```
 
-Writes `data/millage_2025.json` from the Allegheny County Treasurer.
+Writes `data/millage_2026.json` (active rates) and `data/millage_2025.json` (reference) from the [Allegheny County Treasurer millage page](https://alleghenycountytreasurer.us/real-estate-tax/local-and-school-district-tax-millage/).
 
 Jack Billings note: those millage reates are out of date.
 For example, City of Pittsburgh millage was 8.06 in 2025, and is 9.67 in 2026.

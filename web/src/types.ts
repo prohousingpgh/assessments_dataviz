@@ -41,6 +41,8 @@ export type TaxBreakdown = {
   county: TaxLine
   municipality: TaxLine
   school: TaxLine
+  /** Extra local levies (e.g. Pittsburgh parks & library). */
+  additional?: TaxLine[]
   total: number
 }
 
@@ -57,6 +59,7 @@ export type TaxScenarioBreakdown = {
   county: TaxLine
   municipality: TaxLine
   school: TaxLine
+  additional?: TaxLine[]
   total: number
   delta: TaxDelta
   jurisdiction_factors?: Record<string, number>
