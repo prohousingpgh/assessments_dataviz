@@ -326,14 +326,13 @@ export function ParcelPage() {
               checked={incomeBelow125Ami}
               onChange={(e) => setIncomeBelow125Ami(e.target.checked)}
             />
-            <span>
-              My household income is below 125% of Area Median Income
-            </span>
+            <span>I claim the long-time owner occupant protection (LOOP)</span>
           </label>
           <p className="tax-option-help">
-            Under proposed protections, county property tax after reassessment would be limited to a{' '}
-            <strong>50% increase</strong> over today&apos;s county tax (municipal and school taxes are
-            unchanged). This is an illustrative calculation only.
+            Under LOOP protections for households earning under 125% AMI who have lived in their home
+            for 10 or more years, county property tax after reassessment would be limited to a{' '}
+            <strong>50% increase</strong> over today&apos;s county tax (municipal and school taxes
+            are unchanged). This is an illustrative calculation only.
           </p>
 
           {incomeProtection?.countyCapped && (
@@ -588,6 +587,6 @@ function formatFutureMillsNote(line: TaxLine): string {
 
 function formatMillsAmount(mills: number | null | undefined): string {
   if (mills == null) return '—'
-  return mills.toFixed(4).replace(/\.?0+$/, '')
+  return mills.toFixed(2)
 }
 
