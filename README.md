@@ -101,5 +101,7 @@ Uses 2025 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`,
 
 - [x] Property tax estimates (millage tables)
 - [x] Single-server production deploy (Docker + Fly.io + GitHub Actions)
+- [ ] Jack Billings - Verify Homestead Exclusions for every school district and municipality
+- [ ] Jack Billings - Confirm that data/homestead_exclusions.json has the right tax year (2026, not 2025).
 - [ ] Neighborhood map (vector tiles from `predictions.parquet`; centroid map + PMTiles build scripts in repo)
 - [ ] Automated data bundle from agc_assessments CI
