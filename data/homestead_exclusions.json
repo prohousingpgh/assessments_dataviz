@@ -1230,18 +1230,18 @@
       "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
     },
     "Wilkinsburg": {
-      "amount": 18000,
-      "confidence": "default",
-      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
-      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
-      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+      "amount": 20680.25,
+      "confidence": "Proposed 2026-2027",
+      "source": "Wilkinsburg Proposed General Fund Budget 2026-2027",
+      "source_url": "https://4.files.edl.io/6ddb/06/01/26/174100-b662f745-3ec7-493d-9415-6b1ff53e92bb.pdf",
+      "notes": "For 2026–27, the exact exclusion won't be known until Wilkinsburg adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In the proposed budget, the exclusion was $20,680.25."
     },
     "Woodland Hills": {
-      "amount": 18000,
-      "confidence": "default",
-      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
-      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
-      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion. Confirm with the municipality or school district before relying on this figure."
+      "amount": 13083,
+      "confidence": "2025 Year",
+      "source": "2025 Woodland Hills School District Real Estate Information",
+      "source_url": "https://4.files.edl.io/35ef/07/21/25/120448-d0086761-4573-4219-9d7b-68e1fcdd7031.pdf",
+      "notes": "For 2026–27, the exact exclusion won't be known until Woodland Hills adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In 2025, the exclusion was $13,083."
     }
   },
   "metadata": {
