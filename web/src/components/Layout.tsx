@@ -22,7 +22,12 @@ export function Layout() {
               width={160}
               height={40}
             />
-            <span className="site-title">Home Assessment Explorer</span>
+            <span className="site-title">
+              Home Assessment Explorer{' '}
+              <sup className="site-beta" title="Preview release — features and data may change">
+                Beta
+              </sup>
+            </span>
           </Link>
           <nav className="site-nav" aria-label="Main">
             {nav.map((item) => (

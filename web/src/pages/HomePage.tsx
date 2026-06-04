@@ -24,11 +24,11 @@ export function HomePage() {
       <section className="steps-grid">
         <div>
           <h3>1. Look up</h3>
-          <p>Search by street address. No parcel ID needed.</p>
+          <p>Search by street address.</p>
         </div>
         <div>
           <h3>2. Compare</h3>
-          <p>See assessed value today and under the Pro-Housing modeled reassessment.</p>
+          <p>See assessed value today and under the modeled reassessment.</p>
         </div>
         <div>
           <h3>3. Understand</h3>

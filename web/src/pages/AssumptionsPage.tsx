@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import duckHollowMap from '../assets/duck-hollow-map-example.png'
 import { PageHeader } from '../components/PageHeader'
 import { getManifest } from '../api'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -122,6 +123,59 @@ export function AssumptionsPage() {
             parcels in the dataset, not a forecast from any one municipality.
           </li>
         </ul>
+      </section>
+
+      <section className="card methodology-limitations">
+        <h2>Limitations of this analysis</h2>
+        <p>
+          Any county-wide reassessment relies heavily on a <strong>mass appraisal</strong> system:
+          statistical models that infer value from patterns across thousands of parcels. That approach
+          works well for most homes with plenty of nearby sales and similar housing stock, but it will
+          always miss some local circumstances where a pocket of a neighborhood is not closely related
+          to the comps the model leans on.
+        </p>
+        <p>
+          A full county reassessment would still use computer-aided mass appraisal for the bulk of
+          parcels, but would supplement it with <strong>human review</strong> to correct outliers —
+          places where geography, access, flood risk, housing type, or thin sales history mean
+          automated comps are misleading.
+        </p>
+
+        <div className="methodology-example">
+          <h3 className="assumptions-subhead">Example: Duck Hollow (Squirrel Hill)</h3>
+          <figure className="methodology-figure">
+            <img
+              src={duckHollowMap}
+              alt="Map of Summerset at Frick Park and Duck Hollow showing modeled valuation changes: mostly moderate increases in Summerset and very large increases in circled Duck Hollow parcels."
+            />
+            <figcaption>
+              Duck Hollow (circled) vs. Summerset — modeled change, not official county values.
+            </figcaption>
+          </figure>
+          <p>
+            <strong>Duck Hollow</strong> sits in a river valley below Summerset at Frick Park and the
+            main Squirrel Hill grid. It is physically and economically distinct from the newer,
+            higher-value townhomes and single-family homes on the ridge at{' '}
+            <strong>Summerset at Frick Park</strong>, yet the mass appraisal models on this site have
+            little or no sales evidence from Duck Hollow itself. The system therefore tends to pull
+            valuations toward nearby higher-end areas — and on our maps those Duck Hollow parcels show
+            large increases relative to today&apos;s county assessments.
+          </p>
+          <p>
+            One illustrative parcel is{' '}
+            <Link to="/home/0129J00032000000">0129J00032000000</Link> in Duck Hollow — likely
+            overstated by the computerized mass assessment relative to what a human appraiser would
+            assign after visiting the site and weighing Duck Hollow on its own terms.
+          </p>
+          <p>
+            <strong>What this tool does:</strong> Our estimates follow the OpenAvmKit mass appraisal
+            output only, because we do not have the resources to replicate a full reassessment office
+            with field review and appeals workflow. A real Allegheny County reassessment would be
+            expected to catch many of these outliers; this site is useful for understanding broad
+            patterns and your home&apos;s place in the model, not as a final determination for unusual
+            locations like Duck Hollow.
+          </p>
+        </div>
       </section>
 
       <section className="card assumptions-card">
