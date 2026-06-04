@@ -15,9 +15,9 @@ Homeowner-facing site to look up a residential address in Allegheny County, comp
 ### 1. Python API
 
 ```bash
-cd "c:\Users\david\Documents\Dev Projects\assessments_dataviz"
+cd path/to/assessments_dataviz
 python -m venv .venv
-.venv\Scripts\activate
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -30,17 +30,13 @@ python scripts/fetch_millage.py --year 2025
 
 Writes `data/millage_2026.json` (active rates) and `data/millage_2025.json` (reference) from the [Allegheny County Treasurer millage page](https://alleghenycountytreasurer.us/real-estate-tax/local-and-school-district-tax-millage/).
 
-Jack Billings note: those millage reates are out of date.
-For example, City of Pittsburgh millage was 8.06 in 2025, and is 9.67 in 2026.
-2026 Millage rates can be found here https://alleghenycountytreasurer.us/real-estate-tax/local-and-school-district-tax-millage/
-
 ### 3. Build the search database
 
 ```bash
-python scripts/build_db.py ^
-  --predictions "C:\path\to\residential_predictions_20260503.csv" ^
-  --assessments "data\assessments_wprdc.csv" ^
-  --commercial "data\commercial_existing_valuations.csv"
+python scripts/build_db.py \
+  --predictions path/to/residential_predictions.csv \
+  --assessments path/to/wprdc_property_assessments.csv \
+  --commercial path/to/commercial_existing_valuations.csv
 ```
 
 This writes `data/parcels.db` and `data/manifest.json` (includes county/local assessed values and homestead flags for tax estimates).
@@ -69,6 +65,10 @@ docker compose up --build
 ```
 
 Open http://localhost:8080 (API + built UI in one process).
+
+## Security
+
+See **[SECURITY.md](SECURITY.md)** for secrets handling, what belongs in git, GitHub Release data bundles, and the public production API.
 
 ## Deploy to the web
 

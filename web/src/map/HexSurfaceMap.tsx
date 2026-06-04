@@ -114,7 +114,7 @@ export function HexSurfaceMap({
             `County avg change: ${countyAveragePct.toFixed(1)}%`
       popup
         .setLngLat(event.lngLat)
-        .setHTML(`Hex sample: ${count.toLocaleString()} parcels<br/>` + detail)
+        .setHTML(`Area sample: ${count.toLocaleString()} parcels<br/>` + detail)
         .addTo(map)
     })
 
@@ -131,6 +131,12 @@ export function HexSurfaceMap({
     }
   }, [bounds, center, colorCenter, colorProperty, countyAveragePct, data, displayMode, heightScale, stops])
 
-  return <div className="parcel-map hex-surface-map" ref={containerRef} aria-label="3D hex surface map" />
+  return (
+    <div
+      className="parcel-map hex-surface-map"
+      ref={containerRef}
+      aria-label="Countywide 3D visualization"
+    />
+  )
 }
 

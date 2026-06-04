@@ -152,11 +152,10 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
 
           {hexbins && hexbins.features.length > 0 && (
             <section className="card panel hex-surface-panel">
-              <h3>Countywide relative-change surface (hex bins)</h3>
+              <h3>Countywide relative-change visualization</h3>
               <p className="detail-foot">
-                3D hex bins show where assessment changes are faster or slower than the county
-                average. Height indicates parcel concentration in each hex, and color indicates
-                direction.
+                3D countywide view of where assessment changes are faster or slower than the county
+                average. Height indicates how many homes are in each area; color indicates direction.
               </p>
               <div className="map-shell hex-surface-shell">
                 <HexSurfaceMap
@@ -168,7 +167,7 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
                 />
               </div>
               <p className="page-meta map-help">
-                Hover a hex to see sample size and relative change. Hex bins shown:{' '}
+                Hover an area to see sample size and relative change. Areas shown:{' '}
                 {hexbins.meta?.returned ?? hexbins.features.length}.
               </p>
             </section>
@@ -230,10 +229,10 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
 
           {valuationHexbins && valuationHexbins.features.length > 0 && (
             <section className="card panel hex-surface-panel">
-              <h3>Countywide valuation-ratio surface (hex bins)</h3>
+              <h3>Countywide valuation-ratio visualization</h3>
               <p className="detail-foot">
-                3D hex bins summarize average valuation ratio by area. Height shows how many homes
-                fall in each hex; color shows whether the area is above or below the county median.
+                3D countywide view of average valuation ratio by area. Height shows how many homes
+                are in each area; color shows whether the area is above or below the county median.
               </p>
               <div className="map-shell hex-surface-shell">
                 <HexSurfaceMap
@@ -245,7 +244,7 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
                 />
               </div>
               <p className="page-meta map-help">
-                Hover a hex to see sample size and average ratio. Hex bins shown:{' '}
+                Hover an area to see sample size and average ratio. Areas shown:{' '}
                 {valuationHexbins.meta?.returned ?? valuationHexbins.features.length}.
               </p>
             </section>
