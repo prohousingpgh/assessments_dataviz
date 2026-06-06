@@ -33,6 +33,11 @@ jobs:
           gh release download "${TAG}" --pattern 'data-bundle.zip' --dir /tmp
           unzip -o /tmp/data-bundle.zip -d data/
 
+      # Millage tables ship with app code (split-rate rules, Pittsburgh levies, etc.).
+      # Data releases may bundle older copies — always use the commit's JSON here.
+      - name: Restore millage tables from this commit
+        run: git checkout HEAD -- data/millage_2025.json data/millage_2026.json
+
       - name: Verify runtime data
         run: python scripts/verify_data.py
 
