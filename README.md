@@ -66,6 +66,10 @@ docker compose up --build
 
 Open http://localhost:8080 (API + built UI in one process).
 
+## Contributing
+
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for onboarding, architecture, local dev shortcuts, and Cursor agent context.
+
 ## Security
 
 See **[SECURITY.md](SECURITY.md)** for secrets handling, what belongs in git, GitHub Release data bundles, and the public production API.
