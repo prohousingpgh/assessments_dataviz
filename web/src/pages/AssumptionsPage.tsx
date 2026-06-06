@@ -300,6 +300,16 @@ export function AssumptionsPage() {
           </p>
         )}
 
+        <h3 className="assumptions-subhead">Split-rate municipalities</h3>
+        <p>
+          <strong>City of Clairton</strong>, <strong>City of McKeesport</strong>, and the{' '}
+          <strong>Clairton School District</strong> levy different millage on land versus buildings.
+          We apply land and building millage to the corresponding portions of local taxable value.
+          Homestead exclusions apply to total local taxable value, allocated to land first, then
+          building. Revenue-neutral millage after reassessment uses one adjustment factor per taxing
+          body on total real estate tax.
+        </p>
+
         <h3 className="assumptions-subhead">Optional adjustments on the parcel page</h3>
         <p>
           These are applied in your browser on top of API results — they do not change county records.

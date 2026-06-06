@@ -37,6 +37,18 @@ PITTSBURGH_ADDITIONAL_MILLS = [
     {"id": "library", "label": "Pittsburgh Library Tax", "mills": 0.25},
 ]
 
+# Allegheny municipalities / school districts with separate land and building millage.
+# Treasurer tables often list only the land rate in the primary municipality column.
+SPLIT_RATE_LOCAL_TAXES: dict[str, dict[str, dict[str, float]]] = {
+    "municipalities": {
+        "City of Clairton": {"land_mills": 40.0, "building_mills": 5.0},
+        "City of McKeesport": {"land_mills": 20.5, "building_mills": 11.26},
+    },
+    "school_districts": {
+        "Clairton": {"land_mills": 105.7527, "building_mills": 10.0},
+    },
+}
+
 # Extra aliases for treasurer page naming (2026 municipality table).
 TREASURER_MUNICIPALITY_ALIASES: dict[str, str] = {
     **MUNICIPALITY_ALIASES,
@@ -213,6 +225,7 @@ def build_payload(year: int) -> dict:
         "municipality_additional_mills": {
             "City of Pittsburgh": PITTSBURGH_ADDITIONAL_MILLS,
         },
+        "split_rate_local_taxes": SPLIT_RATE_LOCAL_TAXES,
         "school_mills": dict(sorted(school_mills.items())),
         "municipality_aliases": MUNICIPALITY_ALIASES,
         "school_aliases": SCHOOL_ALIASES,

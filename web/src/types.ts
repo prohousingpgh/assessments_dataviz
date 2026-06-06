@@ -34,6 +34,8 @@ export type TaxLine = {
   mills_nominal?: number | null
   revenue_neutral_factor?: number | null
   mills_label?: string | null
+  /** Present for Clairton / McKeesport municipality and Clairton school district. */
+  split_mills?: { land: number; building: number }
   annual_tax: number
 }
 

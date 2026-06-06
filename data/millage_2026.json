@@ -148,6 +148,24 @@
       }
     ]
   },
+  "split_rate_local_taxes": {
+    "municipalities": {
+      "City of Clairton": {
+        "land_mills": 40.0,
+        "building_mills": 5.0
+      },
+      "City of McKeesport": {
+        "land_mills": 20.5,
+        "building_mills": 11.26
+      }
+    },
+    "school_districts": {
+      "Clairton": {
+        "land_mills": 105.7527,
+        "building_mills": 10.0
+      }
+    }
+  },
   "school_mills": {
     "Allegheny Valley": 21.7049,
     "Avonworth": 22.28,

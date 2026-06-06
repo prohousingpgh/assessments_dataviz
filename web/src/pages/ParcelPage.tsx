@@ -180,10 +180,13 @@ export function ParcelPage() {
     )
   }
 
-  const buildingCurrent =
-    parcel.current_assessment_total != null && parcel.current_assessment_land != null
-      ? parcel.current_assessment_total - parcel.current_assessment_land
-      : null
+  const buildingCurrent = assessmentBuilding(
+    parcel.current_assessment_total,
+    parcel.current_assessment_land
+  )
+  const buildingNew = assessmentBuilding(parcel.new_assessment_total, parcel.new_assessment_land)
+  const landChange = valueChange(parcel.current_assessment_land, parcel.new_assessment_land)
+  const buildingChange = valueChange(buildingCurrent, buildingNew)
 
   const medianPct = summary?.avg_value_change_pct
 
@@ -242,16 +245,40 @@ export function ParcelPage() {
           </div>
           <dl className="detail-list">
             <div>
-              <dt>Change in assessed value</dt>
+              <dt>Land</dt>
               <dd>
-                {formatMoney(parcel.value_change_dollars)} ({formatPct(parcel.value_change_pct)})
+                {formatMoney(parcel.new_assessment_land)}
+                {landChange.dollars != null && (
+                  <>
+                    {' '}
+                    <span className="detail-change">
+                      ({formatSignedMoney(landChange.dollars)}
+                      {landChange.pct != null && `, ${formatPct(landChange.pct)}`})
+                    </span>
+                  </>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>Building</dt>
+              <dd>
+                {formatMoney(buildingNew)}
+                {buildingChange.dollars != null && (
+                  <>
+                    {' '}
+                    <span className="detail-change">
+                      ({formatSignedMoney(buildingChange.dollars)}
+                      {buildingChange.pct != null && `, ${formatPct(buildingChange.pct)}`})
+                    </span>
+                  </>
+                )}
               </dd>
             </div>
             {displayTaxes && (
               <div>
                 <dt>Tax change / year</dt>
                 <dd>
-                  {formatMoney(displayTaxes.delta.total_dollars)}
+                  {formatSignedMoney(displayTaxes.delta.total_dollars)}
                   {displayTaxes.delta.total_percent != null &&
                     ` (${formatPct(displayTaxes.delta.total_percent)})`}
                 </dd>
@@ -574,15 +601,50 @@ function TaxRow({
 }
 
 function formatCurrentMillsNote(line: TaxLine): string {
+  if (line.split_mills) {
+    return `Current: land ${formatMillsAmount(line.split_mills.land)} / building ${formatMillsAmount(line.split_mills.building)} mills`
+  }
   const mills = line.mills_nominal ?? line.mills
   if (mills == null) return 'Current millage: unavailable'
   return `Current millage: ${formatMillsAmount(mills)} mills`
 }
 
 function formatFutureMillsNote(line: TaxLine): string {
+  if (line.split_mills) {
+    const factor = line.revenue_neutral_factor ?? 1
+    const land = line.split_mills.land * factor
+    const building = line.split_mills.building * factor
+    return `After reassessment: land ${formatMillsAmount(land)} / building ${formatMillsAmount(building)} mills`
+  }
   const mills = line.mills
   if (mills == null) return 'After reassessment: unavailable'
   return `After reassessment: ${formatMillsAmount(mills)} mills`
+}
+
+function assessmentBuilding(
+  total: number | null | undefined,
+  land: number | null | undefined
+): number | null {
+  if (total == null || land == null) return null
+  return total - land
+}
+
+function valueChange(
+  current: number | null | undefined,
+  future: number | null | undefined
+): { dollars: number | null; pct: number | null } {
+  if (current == null || future == null) return { dollars: null, pct: null }
+  const dollars = future - current
+  const pct = current > 0 ? (dollars / current) * 100 : null
+  return { dollars, pct }
+}
+
+function formatSignedMoney(value: number | null | undefined): string {
+  if (value == null) return '—'
+  const formatted = formatMoney(Math.abs(value))
+  if (value > 0) return `+${formatted}`
+  if (value < 0) return `−${formatted}`
+  return formatted
 }
 
 function formatMillsAmount(mills: number | null | undefined): string {

@@ -75,6 +75,97 @@ def _mill_tax(taxable: float, mills: float | None) -> float:
     return taxable * mills / 1000.0
 
 
+def _split_rate_entry(
+    cfg: dict[str, Any], *, body: str, key: str | None
+) -> dict[str, float] | None:
+    if not key:
+        return None
+    table = cfg.get("split_rate_local_taxes", {}).get(body, {})
+    entry = table.get(key)
+    if not isinstance(entry, dict):
+        return None
+    land = entry.get("land_mills")
+    building = entry.get("building_mills")
+    if land is None or building is None:
+        return None
+    return {"land_mills": float(land), "building_mills": float(building)}
+
+
+def _assessment_land_building(
+    parcel: dict[str, Any], *, future: bool
+) -> tuple[float, float, float]:
+    """Return (assessment_total, land, building) from modeled/county totals."""
+    if future:
+        total = _to_float(parcel.get("new_assessment_total"))
+        land = _to_float(parcel.get("new_assessment_land"))
+    else:
+        total = _to_float(parcel.get("current_assessment_total"))
+        land = _to_float(parcel.get("current_assessment_land"))
+    if total <= 0:
+        return 0.0, 0.0, 0.0
+    if land <= 0:
+        return total, 0.0, total
+    land = min(land, total)
+    return total, land, max(0.0, total - land)
+
+
+def _apportion_local_land_building(
+    local_total: float,
+    assessment_total: float,
+    land_assessed: float,
+    building_assessed: float,
+) -> tuple[float, float]:
+    if local_total <= 0 or assessment_total <= 0:
+        return 0.0, 0.0
+    if land_assessed <= 0:
+        return 0.0, local_total
+    land_local = local_total * (land_assessed / assessment_total)
+    return land_local, max(0.0, local_total - land_local)
+
+
+def _homestead_land_first_taxable(
+    land: float, building: float, homestead_flag: str | None, exclusion: float
+) -> tuple[float, float]:
+    if (homestead_flag or "").strip().upper() != "HOM" or exclusion <= 0:
+        return land, building
+    applied_to_land = min(exclusion, land)
+    land_taxable = max(0.0, land - applied_to_land)
+    remaining = max(0.0, exclusion - applied_to_land)
+    building_taxable = max(0.0, building - remaining)
+    return land_taxable, building_taxable
+
+
+def _split_rate_tax_amount(
+    land_taxable: float,
+    building_taxable: float,
+    split: dict[str, float],
+    *,
+    factor: float = 1.0,
+) -> float:
+    land_mills = split["land_mills"] * factor
+    building_mills = split["building_mills"] * factor
+    return _mill_tax(land_taxable, land_mills) + _mill_tax(building_taxable, building_mills)
+
+
+def _blended_mills(amount: float, taxable: float) -> float | None:
+    if taxable <= 0:
+        return None
+    return amount * 1000.0 / taxable
+
+
+def _split_mills_label(split: dict[str, float]) -> str:
+    return f"Land {split['land_mills']:g} / Building {split['building_mills']:g} mills"
+
+
+def _split_mills_for_api(split: dict[str, float]) -> dict[str, float]:
+    """Normalize config keys (land_mills) to API/frontend keys (land, building)."""
+    land = split.get("land_mills", split.get("land"))
+    building = split.get("building_mills", split.get("building"))
+    if land is None or building is None:
+        raise ValueError(f"Invalid split millage entry: {split!r}")
+    return {"land": float(land), "building": float(building)}
+
+
 def _homestead_taxable(assessed: float, homestead_flag: str | None, exclusion: float) -> float:
     if assessed <= 0:
         return 0.0
@@ -148,6 +239,7 @@ def _line(
     nominal_mills: float | None = None,
     revenue_neutral_factor: float | None = None,
     scenario: str | None = None,
+    split_mills: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     line: dict[str, Any] = {
         "label": label,
@@ -156,6 +248,12 @@ def _line(
         "mills_label": mills_label,
         "annual_tax": round(amount, 2),
     }
+    if split_mills is not None:
+        normalized = _split_mills_for_api(split_mills)
+        line["split_mills"] = {
+            "land": round(normalized["land"], 4),
+            "building": round(normalized["building"], 4),
+        }
     if nominal_mills is not None and revenue_neutral_factor is not None and revenue_neutral_factor != 1.0:
         line["mills_nominal"] = round(nominal_mills, 4)
         line["revenue_neutral_factor"] = round(revenue_neutral_factor, 6)
@@ -181,6 +279,12 @@ def _compute_future_breakdown(
     municipality: str | None,
     school_district: str | None,
     additional_future_entries: list[dict[str, Any]] | None = None,
+    muni_split: dict[str, float] | None = None,
+    school_split: dict[str, float] | None = None,
+    muni_land_taxable_fut: float | None = None,
+    muni_building_taxable_fut: float | None = None,
+    school_land_taxable_fut: float | None = None,
+    school_building_taxable_fut: float | None = None,
 ) -> dict[str, Any]:
     county_factor, _ = get_revenue_neutral_factor(
         aggregates, "county", "Allegheny County", scenario=scenario
@@ -197,8 +301,38 @@ def _compute_future_breakdown(
     school_mills_future = _effective_future_mills(school_mills, school_factor)
 
     county_fut = _mill_tax(county_taxable_fut, county_mills_future)
-    muni_fut = _mill_tax(local_taxable_fut_muni, muni_mills_future)
-    school_fut = _mill_tax(local_taxable_fut_school, school_mills_future)
+
+    if (
+        muni_split
+        and muni_land_taxable_fut is not None
+        and muni_building_taxable_fut is not None
+    ):
+        muni_fut = _split_rate_tax_amount(
+            muni_land_taxable_fut,
+            muni_building_taxable_fut,
+            muni_split,
+            factor=muni_factor,
+        )
+        muni_taxable_total = muni_land_taxable_fut + muni_building_taxable_fut
+        muni_mills_future = _blended_mills(muni_fut, muni_taxable_total)
+    else:
+        muni_fut = _mill_tax(local_taxable_fut_muni, muni_mills_future)
+
+    if (
+        school_split
+        and school_land_taxable_fut is not None
+        and school_building_taxable_fut is not None
+    ):
+        school_fut = _split_rate_tax_amount(
+            school_land_taxable_fut,
+            school_building_taxable_fut,
+            school_split,
+            factor=school_factor,
+        )
+        school_taxable_total = school_land_taxable_fut + school_building_taxable_fut
+        school_mills_future = _blended_mills(school_fut, school_taxable_total)
+    else:
+        school_fut = _mill_tax(local_taxable_fut_school, school_mills_future)
     additional_future: list[dict[str, Any]] = []
     additional_future_total = 0.0
     for entry in additional_future_entries or []:
@@ -235,23 +369,31 @@ def _compute_future_breakdown(
         ),
         "municipality": _line(
             municipality_label,
-            local_taxable_fut_muni,
+            (muni_land_taxable_fut + muni_building_taxable_fut)
+            if muni_split and muni_land_taxable_fut is not None and muni_building_taxable_fut is not None
+            else local_taxable_fut_muni,
             muni_mills_future,
             muni_fut,
-            muni_key,
-            nominal_mills=muni_mills,
+            muni_key if not muni_split else _split_mills_label(muni_split),
+            nominal_mills=muni_mills if not muni_split else None,
             revenue_neutral_factor=muni_factor,
             scenario=scenario,
+            split_mills=muni_split,
         ),
         "school": _line(
             school_label,
-            local_taxable_fut_school,
+            (school_land_taxable_fut + school_building_taxable_fut)
+            if school_split
+            and school_land_taxable_fut is not None
+            and school_building_taxable_fut is not None
+            else local_taxable_fut_school,
             school_mills_future,
             school_fut,
-            school_key,
-            nominal_mills=school_mills,
+            school_key if not school_split else _split_mills_label(school_split),
+            nominal_mills=school_mills if not school_split else None,
             revenue_neutral_factor=school_factor,
             scenario=scenario,
+            split_mills=school_split,
         ),
         "total": round(total, 2),
         "factors": {
@@ -308,10 +450,21 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     )
     county_mills = float(cfg["county_mills"])
 
-    if muni_mills is None:
+    muni_split = _split_rate_entry(cfg, body="municipalities", key=muni_key)
+    school_split = _split_rate_entry(cfg, body="school_districts", key=school_key)
+
+    if muni_mills is None and not muni_split:
         warnings.append(f"Municipality millage not found for “{municipality}”.")
-    if school_mills is None:
+    if school_mills is None and not school_split:
         warnings.append(f"School district millage not found for “{school_district}”.")
+
+    assessment_total_cur, land_cur, building_cur = _assessment_land_building(parcel, future=False)
+    assessment_total_fut, land_fut, building_fut = _assessment_land_building(parcel, future=True)
+
+    if (muni_split or school_split) and assessment_total_cur > 0 and land_cur <= 0:
+        warnings.append(
+            "Land/building assessed values are missing; split-rate local taxes may be inaccurate."
+        )
 
     def _exclusion(body: TaxingBody, *, after: bool) -> float:
         return homestead_exclusion_amount(
@@ -338,6 +491,38 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     local_taxable_cur_school = _homestead_taxable(local_current, homestead_flag, school_excl_cur)
     local_taxable_fut_school = _homestead_taxable(local_future, homestead_flag, school_excl_fut)
 
+    if muni_split:
+        muni_land_cur, muni_building_cur = _apportion_local_land_building(
+            local_current, assessment_total_cur, land_cur, building_cur
+        )
+        muni_land_fut, muni_building_fut = _apportion_local_land_building(
+            local_future, assessment_total_fut, land_fut, building_fut
+        )
+        muni_land_cur, muni_building_cur = _homestead_land_first_taxable(
+            muni_land_cur, muni_building_cur, homestead_flag, muni_excl_cur
+        )
+        muni_land_fut, muni_building_fut = _homestead_land_first_taxable(
+            muni_land_fut, muni_building_fut, homestead_flag, muni_excl_fut
+        )
+    else:
+        muni_land_cur = muni_building_cur = muni_land_fut = muni_building_fut = 0.0
+
+    if school_split:
+        school_land_cur, school_building_cur = _apportion_local_land_building(
+            local_current, assessment_total_cur, land_cur, building_cur
+        )
+        school_land_fut, school_building_fut = _apportion_local_land_building(
+            local_future, assessment_total_fut, land_fut, building_fut
+        )
+        school_land_cur, school_building_cur = _homestead_land_first_taxable(
+            school_land_cur, school_building_cur, homestead_flag, school_excl_cur
+        )
+        school_land_fut, school_building_fut = _homestead_land_first_taxable(
+            school_land_fut, school_building_fut, homestead_flag, school_excl_fut
+        )
+    else:
+        school_land_cur = school_building_cur = school_land_fut = school_building_fut = 0.0
+
     pittsburgh_additional = (
         _pittsburgh_additional_entries(cfg)
         if _is_city_of_pittsburgh(municipality, muni_key)
@@ -354,8 +539,22 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
     )
 
     county_cur = _mill_tax(county_taxable_cur, county_mills)
-    muni_cur = _mill_tax(local_taxable_cur_muni, muni_mills)
-    school_cur = _mill_tax(local_taxable_cur_school, school_mills)
+    if muni_split:
+        muni_cur = _split_rate_tax_amount(muni_land_cur, muni_building_cur, muni_split)
+        muni_taxable_cur = muni_land_cur + muni_building_cur
+        muni_mills_display = _blended_mills(muni_cur, muni_taxable_cur)
+    else:
+        muni_cur = _mill_tax(local_taxable_cur_muni, muni_mills)
+        muni_taxable_cur = local_taxable_cur_muni
+        muni_mills_display = muni_mills
+    if school_split:
+        school_cur = _split_rate_tax_amount(school_land_cur, school_building_cur, school_split)
+        school_taxable_cur = school_land_cur + school_building_cur
+        school_mills_display = _blended_mills(school_cur, school_taxable_cur)
+    else:
+        school_cur = _mill_tax(local_taxable_cur_school, school_mills)
+        school_taxable_cur = local_taxable_cur_school
+        school_mills_display = school_mills
     current_total = county_cur + muni_cur + school_cur + additional_cur_total
 
     if fmv_current > 0 and fmv_future > 0:
@@ -397,6 +596,12 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
             municipality=municipality,
             school_district=school_district,
             additional_future_entries=pittsburgh_additional,
+            muni_split=muni_split,
+            school_split=school_split,
+            muni_land_taxable_fut=muni_land_fut if muni_split else None,
+            muni_building_taxable_fut=muni_building_fut if muni_split else None,
+            school_land_taxable_fut=school_land_fut if school_split else None,
+            school_building_taxable_fut=school_building_fut if school_split else None,
         )
         fut_total = future_breakdown["total"]
         delta = fut_total - current_total
@@ -441,14 +646,30 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
             "levies on local taxable value; after reassessment these millages are scaled with the "
             "municipality revenue-neutral factor like city general millage."
         )
+    if muni_split or school_split:
+        notes.append(
+            "City of Clairton, City of McKeesport, and Clairton School District use split land/building "
+            "millage on local taxable value. Homestead exclusions apply to total local taxable value, "
+            "allocated to land first, then building."
+        )
 
     current_breakdown: dict[str, Any] = {
         "county": _line("Allegheny County", county_taxable_cur, county_mills, county_cur, "Allegheny County"),
         "municipality": _line(
-            municipality_label, local_taxable_cur_muni, muni_mills, muni_cur, muni_key
+            municipality_label,
+            muni_taxable_cur,
+            muni_mills_display,
+            muni_cur,
+            muni_key if not muni_split else _split_mills_label(muni_split),
+            split_mills=muni_split,
         ),
         "school": _line(
-            school_label, local_taxable_cur_school, school_mills, school_cur, school_key
+            school_label,
+            school_taxable_cur,
+            school_mills_display,
+            school_cur,
+            school_key if not school_split else _split_mills_label(school_split),
+            split_mills=school_split,
         ),
         "total": round(current_total, 2),
     }
