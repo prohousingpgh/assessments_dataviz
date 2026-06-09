@@ -8,7 +8,16 @@ import {
 } from '../api'
 import { PageHeader } from '../components/PageHeader'
 import { usePageTitle } from '../hooks/usePageTitle'
-import { formatLegendLabel, MAP_COLOR_STOPS, VALUATION_RATIO_BINS } from '../map/colors'
+import {
+  legendGradientCss,
+  MAP_COLOR_STOPS,
+  relativeChangeCenterPosition,
+  VALUATION_RATIO_BINS,
+  valuationRatioCenterPosition,
+  valuationRatioGradientCss,
+  type ValuationRatioBin,
+} from '../map/colors'
+import { MapGradientLegend } from '../map/MapGradientLegend'
 import { HexSurfaceMap } from '../map/HexSurfaceMap'
 import { ParcelMap, type FocusedParcel } from '../map/ParcelMap'
 import type {
@@ -125,24 +134,16 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
             />
           </div>
 
-          <div className="map-legend" aria-label="Assessment change legend">
-            {config.value_change_color_stops.map((stop, index) => {
-              const next = config.value_change_color_stops[index + 1]
-              const label = next
-                ? `${formatLegendLabel(stop.pct)} (${stop.pct} to ${next.pct} pp)`
-                : `${formatLegendLabel(stop.pct)} (${stop.pct}+ pp)`
-              return (
-                <div key={stop.pct} className="map-legend-item">
-                  <span
-                    className="map-legend-swatch"
-                    style={{ background: stop.color }}
-                    aria-hidden="true"
-                  />
-                  <span>{label}</span>
-                </div>
-              )
-            })}
-          </div>
+          <MapGradientLegend
+            gradientCss={legendGradientCss(config.value_change_color_stops)}
+            ariaLabel="Assessment change relative to county base growth, from much slower to much faster"
+            lowLabel="Slower than county base"
+            highLabel="Faster than county base"
+            centerLabel="County base growth"
+            minTick={`${config.value_change_color_stops[0]?.pct ?? -80} pp`}
+            maxTick={`+${config.value_change_color_stops[config.value_change_color_stops.length - 1]?.pct ?? 80} pp`}
+            centerPositionPct={relativeChangeCenterPosition(config.value_change_color_stops)}
+          />
 
           <p className="page-meta map-help">
             Color shows how much a parcel changed relative to countywide base growth (total assessed
@@ -209,18 +210,18 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
             />
           </div>
 
-          <div className="map-legend" aria-label="Valuation ratio legend">
-            {(valuationConfig.valuation_ratio_bins ?? VALUATION_RATIO_BINS).map((bin) => (
-              <div key={bin.label} className="map-legend-item">
-                <span
-                  className="map-legend-swatch"
-                  style={{ background: bin.color }}
-                  aria-hidden="true"
-                />
-                <span>{bin.label}</span>
-              </div>
-            ))}
-          </div>
+          <MapGradientLegend
+            gradientCss={valuationRatioGradientCss(
+              (valuationConfig.valuation_ratio_bins ?? VALUATION_RATIO_BINS) as ValuationRatioBin[]
+            )}
+            ariaLabel="Valuation ratio relative to county median, from below typical to above typical"
+            lowLabel="Below county median"
+            highLabel="Above county median"
+            centerLabel="County median (1.0)"
+            minTick="< 0.7"
+            maxTick="> 1.5"
+            centerPositionPct={valuationRatioCenterPosition()}
+          />
 
           <p className="page-meta map-help">
             Values below <strong>1.0</strong> reassess lower than the median parcel (their share of

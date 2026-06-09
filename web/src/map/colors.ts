@@ -35,6 +35,59 @@ export function formatLegendLabel(pct: number): string {
   return 'Much faster than county'
 }
 
+/** CSS linear-gradient matching map color stops (for legend bar). */
+export function legendGradientCss(stops: MapColorStop[] = MAP_COLOR_STOPS): string {
+  const sorted = [...stops].sort((a, b) => a.pct - b.pct)
+  if (sorted.length === 0) return 'transparent'
+  const min = sorted[0].pct
+  const max = sorted[sorted.length - 1].pct
+  const span = max - min || 1
+  const parts = sorted.map(
+    (stop) => `${stop.color} ${(((stop.pct - min) / span) * 100).toFixed(1)}%`
+  )
+  return `linear-gradient(to right, ${parts.join(', ')})`
+}
+
+export type ValuationRatioBin = {
+  color: string
+  label: string
+  ratio?: number
+}
+
+/** CSS linear-gradient approximating step-based valuation ratio bins. */
+export function valuationRatioGradientCss(
+  bins: readonly ValuationRatioBin[] = VALUATION_RATIO_BINS,
+  minRatio = 0.65,
+  maxRatio = 1.55
+): string {
+  if (bins.length === 0) return 'transparent'
+  const span = maxRatio - minRatio || 1
+  const points: { ratio: number; color: string }[] = [{ ratio: minRatio, color: bins[0].color }]
+  for (const bin of bins) {
+    if (bin.ratio != null) {
+      points.push({ ratio: bin.ratio, color: bin.color })
+    }
+  }
+  const parts = points.map(
+    (point) => `${point.color} ${(((point.ratio - minRatio) / span) * 100).toFixed(1)}%`
+  )
+  const lastColor = points[points.length - 1]?.color ?? bins[0].color
+  return `linear-gradient(to right, ${parts.join(', ')}, ${lastColor} 100%)`
+}
+
+export function relativeChangeCenterPosition(stops: MapColorStop[] = MAP_COLOR_STOPS): number {
+  const sorted = [...stops].sort((a, b) => a.pct - b.pct)
+  const min = sorted[0]?.pct ?? 0
+  const max = sorted[sorted.length - 1]?.pct ?? 0
+  if (max === min) return 50
+  return ((0 - min) / (max - min)) * 100
+}
+
+export function valuationRatioCenterPosition(minRatio = 0.65, maxRatio = 1.55): number {
+  const span = maxRatio - minRatio || 1
+  return ((1 - minRatio) / span) * 100
+}
+
 /** Binned valuation ratio scale (1.0 = county median new÷old assessment ratio). */
 export const VALUATION_RATIO_BINS = [
   { color: '#4575b4', label: '< 0.7' },
