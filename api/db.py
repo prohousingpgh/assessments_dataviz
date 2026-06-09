@@ -86,7 +86,10 @@ def get_summary_stats(conn: sqlite3.Connection) -> dict[str, Any]:
     ).fetchone()
     d = dict(row)
     if d.get("current_total"):
-        d["county_value_ratio"] = d["new_total"] / d["current_total"]
+        ratio = d["new_total"] / d["current_total"]
+        d["county_value_ratio"] = ratio
+        # Dollar-weighted countywide growth — primary benchmark for UI, maps, and tax slider.
+        d["county_base_growth_pct"] = (ratio - 1) * 100
     return d
 
 

@@ -9,9 +9,9 @@ import type {
 } from './types'
 
 const REFERENCE_GROWTH = 0.2
-/** Commercial growth slider endpoints (decimal): +20% … +360%. */
-const COMMERCIAL_GROWTH_MIN = 0.2
-const COMMERCIAL_GROWTH_MAX = 3.6
+/** Commercial growth slider endpoints (decimal): +20% … +220%. */
+export const COMMERCIAL_GROWTH_MIN = 0.2
+export const COMMERCIAL_GROWTH_MAX = 2.2
 
 export type CommercialGrowthRange = {
   /** Countywide average residential growth — slider midpoint (decimal, ≥ 0). */
@@ -45,20 +45,20 @@ export function parcelResidentialGrowthRate(
   return (futureTotal - currentTotal) / currentTotal
 }
 
-/** Countywide average residential growth as a decimal (0.85 = +85%). */
+/** Countywide residential base growth as a decimal (0.85 = +85%). Prefers dollar-weighted ratio. */
 export function countyAverageResidentialGrowth(
   avgValueChangePct?: number | null,
   countyValueRatio?: number | null
 ): number {
-  if (avgValueChangePct != null && !Number.isNaN(avgValueChangePct)) {
-    return avgValueChangePct / 100
-  }
   if (
     countyValueRatio != null &&
     !Number.isNaN(countyValueRatio) &&
     countyValueRatio > 0
   ) {
     return countyValueRatio - 1
+  }
+  if (avgValueChangePct != null && !Number.isNaN(avgValueChangePct)) {
+    return avgValueChangePct / 100
   }
   return REFERENCE_GROWTH
 }
@@ -156,15 +156,20 @@ export function defaultCommercialGrowthRate(taxes: PropertyTaxes): number {
 
 export function countyAvgFromTaxesOrSummary(
   taxes: PropertyTaxes | null,
-  summary: { avg_value_change_pct?: number; county_value_ratio?: number } | null
+  summary: {
+    avg_value_change_pct?: number
+    county_value_ratio?: number
+    county_base_growth_pct?: number
+  } | null
 ): number {
   if (taxes?.county_avg_residential_growth_rate != null) {
     return taxes.county_avg_residential_growth_rate
   }
-  return countyAverageResidentialGrowth(
-    summary?.avg_value_change_pct,
-    summary?.county_value_ratio ?? taxes?.county_residential_value_ratio
-  )
+  const ratio = summary?.county_value_ratio ?? taxes?.county_residential_value_ratio
+  if (summary?.county_base_growth_pct != null) {
+    return summary.county_base_growth_pct / 100
+  }
+  return countyAverageResidentialGrowth(summary?.avg_value_change_pct, ratio)
 }
 
 /**

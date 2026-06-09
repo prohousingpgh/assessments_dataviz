@@ -70,6 +70,13 @@ Open http://localhost:8080 (API + built UI in one process).
 
 See **[CONTRIBUTING.md](CONTRIBUTING.md)** for onboarding, architecture, local dev shortcuts, and Cursor agent context.
 
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [countywide-metrics-stakeholder-summary.md](docs/countywide-metrics-stakeholder-summary.md) | Short explanation of +118% vs +188% for stakeholders |
+| [countywide-assessment-growth-methodology.md](docs/countywide-assessment-growth-methodology.md) | Full formulas, pipeline, and code references |
+
 ## Security
 
 See **[SECURITY.md](SECURITY.md)** for secrets handling, what belongs in git, GitHub Release data bundles, and the public production API.
@@ -97,9 +104,9 @@ The parcel page shows estimated **annual** property tax for:
 - Municipality (city or borough)
 - School district
 
-Uses 2025 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`, and homestead (`HOM`) exclusion ($18,000) on county, municipality, and school taxable value.
+Uses 2026 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`, and homestead (`HOM`) exclusion ($18,000) on county, municipality, and school taxable value.
 
-**Revenue-neutral reassessment:** after modeled reassessment, each jurisdiction (county, municipality, school district) adjusts millage so total tax revenue stays the same, including existing commercial assessed values. Commercial reassessment is not modeled; the site uses +20% commercial growth as the estimate, with a range from 0% (low) to +40% (high). An individual home’s tax can still change if its value shifts more or less than the jurisdiction average.
+**Revenue-neutral reassessment:** after modeled reassessment, each jurisdiction adjusts millage so total tax revenue stays the same, including existing commercial assessed values. Commercial reassessment is not modeled per parcel; the parcel page slider sets commercial growth from **+20% to +220%**, defaulting to **county base growth (~+118%)** at the center. An individual home’s tax can still change if its value shifts more or less than the countywide base.
 
 ## Roadmap
 

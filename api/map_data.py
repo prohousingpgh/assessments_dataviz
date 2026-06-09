@@ -5,6 +5,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from api.db import get_summary_stats
+
 ROOT = Path(__file__).resolve().parents[1]
 PMTILES_PATH = ROOT / "data" / "parcels.pmtiles"
 
@@ -75,7 +77,7 @@ def map_config(conn: sqlite3.Connection) -> dict[str, Any]:
     has_centroids = has_parcel_centroids(conn)
     has_pmtiles = PMTILES_PATH.is_file()
     mode = "pmtiles" if has_pmtiles else ("points" if has_centroids else "unavailable")
-    county_avg_value_change_pct = _county_avg_value_change_pct(conn)
+    county_map_center_pct = _county_map_center_value_change_pct(conn)
     return {
         "mode": mode,
         "bounds": bounds,
@@ -84,7 +86,8 @@ def map_config(conn: sqlite3.Connection) -> dict[str, Any]:
             (bounds["south"] + bounds["north"]) / 2,
         ],
         "value_change_color_stops": RELATIVE_CHANGE_COLOR_STOPS,
-        "county_avg_value_change_pct": county_avg_value_change_pct,
+        "county_avg_value_change_pct": county_map_center_pct,
+        "county_base_growth_pct": county_map_center_pct,
         "pmtiles_url": "/api/map/tiles/parcels.pmtiles" if has_pmtiles else None,
         "source_layer": "parcels",
         "parcel_count": _parcel_count(conn),
@@ -146,16 +149,14 @@ def map_valuation_config(conn: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
-def _county_avg_value_change_pct(conn: sqlite3.Connection) -> float:
-    row = conn.execute(
-        """
-        SELECT AVG(value_change_pct) AS avg_value_change_pct
-        FROM parcels
-        WHERE current_assessment_total > 0 AND new_assessment_total > 0
-        """
-    ).fetchone()
-    value = row["avg_value_change_pct"] if row else None
-    return float(value) if value is not None else 0.0
+def _county_map_center_value_change_pct(conn: sqlite3.Connection) -> float:
+    """Map color center: dollar-weighted county base growth (ratio − 1), not mean parcel %."""
+    summary = get_summary_stats(conn)
+    base = summary.get("county_base_growth_pct")
+    if base is not None:
+        return float(base)
+    avg = summary.get("avg_value_change_pct")
+    return float(avg) if avg is not None else 0.0
 
 
 def _limit_for_zoom(zoom: float) -> int:
@@ -247,7 +248,7 @@ def map_hexbins_geojson(
         return {"type": "FeatureCollection", "features": [], "meta": {"returned": 0}}
 
     bounds = parcel_bounds(conn)
-    county_avg = _county_avg_value_change_pct(conn)
+    county_avg = _county_map_center_value_change_pct(conn)
     size = max(0.0025, min(0.03, float(hex_size_deg)))
     min_samples = max(1, min(500, int(min_count)))
 

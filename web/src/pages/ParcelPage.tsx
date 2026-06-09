@@ -14,7 +14,6 @@ import {
   commercialGrowthRange,
   countyAvgFromTaxesOrSummary,
   describeCommercialGrowthAssumption,
-  growthFromSliderPosition,
 } from '../commercialGrowth'
 import {
   formatJurisdictionName,
@@ -28,6 +27,7 @@ import {
   homesteadExclusionsFromTaxes,
 } from '../homesteadExemption'
 import { applyParcelTaxAdjustments } from '../taxAdjustments'
+import { countyBaseGrowthFromSummary } from '../countyGrowth'
 
 function hasCommercialSlider(taxes: PropertyTaxes): boolean {
   const bases = taxes.revenue_neutral_bases
@@ -72,7 +72,7 @@ export function ParcelPage() {
 
   useEffect(() => {
     if (taxes && commercialGrowth === null) {
-      setCommercialGrowth(growthFromSliderPosition(50, growthRange))
+      setCommercialGrowth(growthRange.center)
     }
   }, [taxes, commercialGrowth, growthRange])
 
@@ -188,7 +188,8 @@ export function ParcelPage() {
   const landChange = valueChange(parcel.current_assessment_land, parcel.new_assessment_land)
   const buildingChange = valueChange(buildingCurrent, buildingNew)
 
-  const medianPct = summary?.avg_value_change_pct
+  const countyBasePct = countyBaseGrowthFromSummary(summary)
+  const meanParcelPct = summary?.avg_value_change_pct
 
   return (
     <div className="page">
@@ -298,8 +299,8 @@ export function ParcelPage() {
         <h2>Nearby parcels</h2>
         <p className="detail-foot">
           Zoomed to roughly a 1.5-block radius around this property. Color shows relative change
-          versus county average. Click a parcel to focus it, then use the popup to open full
-          details.
+          versus countywide base growth (~total assessed value). Click a parcel to focus it, then
+          use the popup to open full details.
         </p>
         {nearbyMapError && <p className="search-error">{nearbyMapError}</p>}
         {!nearbyMapError &&
@@ -328,7 +329,7 @@ export function ParcelPage() {
         <section className="card">
           <h2>Estimated property taxes per year</h2>
           <p className="detail-foot tax-intro">
-            {taxes.tax_year ? `${taxes.tax_year} nominal millage` : '2025 nominal millage'} · after reassessment,
+            {taxes.tax_year ? `${taxes.tax_year} nominal millage` : '2026 nominal millage'} · after reassessment,
             rates are adjusted so each jurisdiction collects the same total tax revenue (revenue-neutral
             reassessment). Your bill can still change if your home&apos;s value shifts more or less than average.
           </p>
@@ -479,21 +480,26 @@ export function ParcelPage() {
         </section>
       )}
 
-      {medianPct != null && (
+      {countyBasePct != null && (
         <section className="card">
           <h2>Your home vs the county</h2>
           <p>
-            Average assessed-value change across included homeowner parcels in this dataset:{' '}
-            <strong>{formatPct(medianPct)}</strong>
+            Countywide residential assessed value in this dataset would grow by about{' '}
+            <strong>{formatPct(countyBasePct)}</strong>
             {summary?.county_value_ratio != null && (
-              <>
-                {' '}
-                (total residential assessed value ratio ≈ {summary.county_value_ratio.toFixed(2)}×)
-              </>
+              <> ({summary.county_value_ratio.toFixed(2)}× total current value)</>
             )}
+            .
           </p>
           <p className="detail-foot">
-            Your change ({formatPct(parcel.value_change_pct)}) can be higher or lower than this average.
+            Your change ({formatPct(parcel.value_change_pct)}) can be higher or lower than this
+            countywide growth rate.
+            {meanParcelPct != null && (
+              <>
+                {' '}
+                Mean change per parcel (unweighted): {formatPct(meanParcelPct)}.
+              </>
+            )}
           </p>
         </section>
       )}

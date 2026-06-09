@@ -23,8 +23,12 @@ export type Parcel = SearchResult & {
 
 export type CountySummary = {
   parcel_count?: number
+  /** Mean percent change per parcel (unweighted); secondary statistic. */
   avg_value_change_pct?: number
+  /** Total modeled future ÷ total current residential assessed value. */
   county_value_ratio?: number
+  /** Dollar-weighted county growth in percent points: (county_value_ratio − 1) × 100. */
+  county_base_growth_pct?: number
 }
 
 export type TaxLine = {
@@ -99,7 +103,7 @@ export type PropertyTaxes = {
   tax_year?: number
   revenue_neutral_reassessment?: boolean
   parcel_residential_growth_rate?: number | null
-  /** Countywide average residential assessment growth (decimal); slider midpoint. */
+  /** Countywide residential base growth (decimal); dollar-weighted, slider midpoint. */
   county_avg_residential_growth_rate?: number | null
   commercial_growth_rate?: number
   revenue_neutral_bases?: RevenueNeutralBases

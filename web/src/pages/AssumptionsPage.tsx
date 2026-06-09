@@ -3,6 +3,11 @@ import { Link } from 'react-router-dom'
 import duckHollowMap from '../assets/duck-hollow-map-example.png'
 import { PageHeader } from '../components/PageHeader'
 import { getManifest } from '../api'
+import {
+  COMMERCIAL_GROWTH_MAX,
+  COMMERCIAL_GROWTH_MIN,
+} from '../commercialGrowth'
+import { countyBaseGrowthFromSummary } from '../countyGrowth'
 import { usePageTitle } from '../hooks/usePageTitle'
 import type { Manifest } from '../types'
 import { formatMoney, formatPct } from '../format'
@@ -27,8 +32,11 @@ export function AssumptionsPage() {
   if (!manifest) return <p className="page-meta">Loading…</p>
 
   const ratio = manifest.county_residential_value_ratio ?? manifest.county_summary?.county_value_ratio
-  const avgPct = manifest.county_summary?.avg_value_change_pct
+  const baseGrowthPct = countyBaseGrowthFromSummary(manifest.county_summary) ??
+    (ratio != null ? (ratio - 1) * 100 : null)
+  const meanParcelPct = manifest.county_summary?.avg_value_change_pct
   const parcelCount = manifest.county_summary?.parcel_count ?? manifest.parcel_count
+  const millageYear = manifest.tax_millage_year ?? 2026
 
   const homesteadFutureCounty =
     ratio != null ? futureHomesteadExclusion(HOMESTEAD_EXCLUSION, ratio) : null
@@ -56,7 +64,7 @@ export function AssumptionsPage() {
           <p>
             Market-value-style assessments for <strong>owner-occupied residential parcels</strong>{' '}
             using OpenAvmKit (regression, spatial comparables, and gradient-boosted models). We then
-            apply 2025 nominal millage and illustrative post-reassessment rules to estimate annual
+            apply {millageYear} nominal millage and illustrative post-reassessment rules to estimate annual
             property taxes.
           </p>
           <p className="detail-foot">Valuation date: {manifest.valuation_date ?? '2025-01-01'}</p>
@@ -88,15 +96,23 @@ export function AssumptionsPage() {
             millage math (not shown as individual parcel lookups).
           </li>
           <li>
-            <strong>2025 millage</strong> —{' '}
+            <strong>{millageYear} millage</strong> —{' '}
             <a
-              href="https://apps.alleghenycounty.us/website/MillMuni.asp?Year=2025"
+              href="https://alleghenycountytreasurer.us/real-estate-tax/local-and-school-district-tax-millage/"
               target="_blank"
               rel="noreferrer"
             >
               Allegheny County Treasurer
             </a>{' '}
-            (county, municipality, and school district rates).
+            (county, municipality, and school district rates; also{' '}
+            <a
+              href={`https://apps.alleghenycounty.us/website/MillMuni.asp?Year=${millageYear}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              county municipal table
+            </a>
+            ).
           </li>
         </ul>
         {manifest.data_as_of && <p className="detail-foot">Data as of {manifest.data_as_of}</p>}
@@ -119,8 +135,8 @@ export function AssumptionsPage() {
             We do not blend in commercial properties when showing a single home&apos;s value change.
           </li>
           <li>
-            Countywide averages on this page and on parcel pages are summaries across all homeowner
-            parcels in the dataset, not a forecast from any one municipality.
+            Countywide benchmarks on this page and on parcel pages summarize all homeowner parcels
+            in the dataset, not a forecast from any one municipality.
           </li>
         </ul>
       </section>
@@ -199,7 +215,7 @@ export function AssumptionsPage() {
             <code>LOCALTOTAL</code>).
           </li>
           <li>
-            <strong>Today</strong> uses 2025 nominal millage from the Treasurer.{' '}
+            <strong>Today</strong> uses {millageYear} nominal millage from the Treasurer.{' '}
             <strong>After reassessment</strong> uses adjusted (effective) millage from the
             revenue-neutral rules below.
           </li>
@@ -223,7 +239,7 @@ export function AssumptionsPage() {
           </li>
           <li>
             Adjustment factor = (current taxable sum) ÷ (future taxable sum). Post-reassessment
-            effective millage = 2025 nominal millage × that factor.
+            effective millage = {millageYear} nominal millage × that factor.
           </li>
           <li>
             Your home&apos;s tax can still rise or fall if its assessed value changes more or less
@@ -246,9 +262,11 @@ export function AssumptionsPage() {
             existing commercial assessments grow by a rate you choose on the parcel page.
           </li>
           <li>
-            <strong>Slider range:</strong> from +20% to +360% commercial growth, with the countywide
-            average residential assessment change at the center for every address. Drag left for
-            slower commercial growth or right for faster.
+            <strong>Slider range:</strong> from {formatPct(COMMERCIAL_GROWTH_MIN * 100)} to{' '}
+            {formatPct(COMMERCIAL_GROWTH_MAX * 100)} commercial growth, with total residential
+            assessed value growth at the center for every address (~
+            {baseGrowthPct != null ? formatPct(baseGrowthPct) : 'county base growth'}). Drag left
+            for slower commercial growth or right for faster.
           </li>
           <li>
             Moving the slider recalculates revenue-neutral millage and your estimated post-reassessment
@@ -332,32 +350,32 @@ export function AssumptionsPage() {
           <li>Payment plans, discounts, penalties, or delinquency</li>
           <li>Act 77 or other special tax relief programs beyond the illustrative income toggle</li>
           <li>Property tax abatements (e.g. LERTA, TIF) or appeal outcomes</li>
-          <li>Changes to statutory millage after 2025</li>
+          <li>Changes to statutory millage after {millageYear}</li>
         </ul>
       </section>
 
-      {(ratio != null || avgPct != null) && (
+      {(ratio != null || baseGrowthPct != null || meanParcelPct != null) && (
         <section className="card">
           <h2>Countywide context (this dataset)</h2>
           <p>
-            These countywide figures drive the post-reassessment homestead scaling described above and
-            provide context for any single home.
+            These countywide figures drive post-reassessment homestead scaling and provide context
+            for any single home.
           </p>
-          {ratio != null && (
+          {ratio != null && baseGrowthPct != null && (
             <p>
               Total residential assessed value (modeled future ÷ current):{' '}
-              <strong>{ratio.toFixed(2)}×</strong>
+              <strong>{ratio.toFixed(2)}×</strong> ({formatPct(baseGrowthPct)} in aggregate). This
+              dollar-weighted figure is our primary countywide benchmark for maps, tax estimates,
+              and parcel comparisons.
             </p>
           )}
-          {avgPct != null && (
-            <p>
-              Average percent change across homeowner parcels: <strong>{formatPct(avgPct)}</strong>
+          {meanParcelPct != null && (
+            <p className="detail-foot">
+              Mean percent change per parcel (unweighted — each home counts equally):{' '}
+              <strong>{formatPct(meanParcelPct)}</strong>. This differs from the aggregate figure
+              because lower-value parcels often show larger percentage increases.
             </p>
           )}
-          <p className="detail-foot">
-            Averages can differ from the total-value ratio because individual homes move by different
-            percentages.
-          </p>
         </section>
       )}
 

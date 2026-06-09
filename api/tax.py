@@ -428,11 +428,12 @@ def compute_property_taxes(parcel: dict[str, Any]) -> dict[str, Any]:
         summary = get_summary_stats(_db_connection)
         if summary.get("county_value_ratio") is not None:
             county_value_ratio = float(summary["county_value_ratio"])
-        avg_pct = summary.get("avg_value_change_pct")
-        if avg_pct is not None:
-            county_avg_residential_growth = float(avg_pct) / 100.0
-        elif county_value_ratio is not None:
+        if county_value_ratio is not None:
             county_avg_residential_growth = county_value_ratio - 1.0
+        else:
+            avg_pct = summary.get("avg_value_change_pct")
+            if avg_pct is not None:
+                county_avg_residential_growth = float(avg_pct) / 100.0
     has_homestead = (homestead_flag or "").strip().upper() == "HOM"
 
     municipality = parcel.get("municipality")

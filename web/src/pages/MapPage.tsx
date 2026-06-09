@@ -69,8 +69,8 @@ export function MapPage() {
       <PageHeader title="Maps">
         <p className="lead">
           Explore modeled reassessment patterns countywide. The first map shows change relative to
-          the county average; the second shows each home&apos;s valuation ratio versus the county
-          median (<strong>1.0</strong> = typical).
+          countywide base growth (total assessed value); the second shows each home&apos;s valuation
+          ratio versus the county median (<strong>1.0</strong> = typical).
         </p>
       </PageHeader>
 
@@ -145,17 +145,18 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
           </div>
 
           <p className="page-meta map-help">
-            Color shows how much a parcel changed relative to the county average growth rate.{' '}
-            <strong>pp</strong> means percentage points versus county average. Click a home to
-            focus it and use the popup link to open full details.
+            Color shows how much a parcel changed relative to countywide base growth (total assessed
+            value). <strong>pp</strong> means percentage points versus that benchmark. Click a home
+            to focus it and use the popup link to open full details.
           </p>
 
           {hexbins && hexbins.features.length > 0 && (
             <section className="card panel hex-surface-panel">
               <h3>Countywide relative-change visualization</h3>
               <p className="detail-foot">
-                3D countywide view of where assessment changes are faster or slower than the county
-                average. Height indicates how many homes are in each area; color indicates direction.
+                3D countywide view of where assessment changes are faster or slower than countywide
+                base growth. Height indicates how many homes are in each area; color indicates
+                direction.
               </p>
               <div className="map-shell hex-surface-shell">
                 <HexSurfaceMap

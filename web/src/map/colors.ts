@@ -29,7 +29,7 @@ export function valueChangeColorExpression(
 export function formatLegendLabel(pct: number): string {
   if (pct < -40) return 'Much slower than county'
   if (pct < -10) return 'Slower than county'
-  if (pct < 10) return 'About county average'
+  if (pct < 10) return 'About county base growth'
   if (pct < 40) return 'Slightly faster than county'
   if (pct < 80) return 'Faster than county'
   return 'Much faster than county'

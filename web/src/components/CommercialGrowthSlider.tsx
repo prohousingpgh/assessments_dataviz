@@ -54,15 +54,15 @@ export function CommercialGrowthSlider({
       />
       <div className="commercial-growth-ticks" aria-hidden="true">
         <span>Slower ({formatCommercialGrowthPercent(tickMin)})</span>
-        <span>County average ({formatCommercialGrowthPercent(tickCenter)})</span>
+        <span>County base ({formatCommercialGrowthPercent(tickCenter)})</span>
         <span>Faster ({formatCommercialGrowthPercent(tickMax)})</span>
       </div>
       <p className="tax-option-help">
         We do not model commercial reassessment parcel-by-parcel. Drag the slider to set how much
         existing commercial assessed value grows when calculating revenue-neutral millage. The
-        center is the <strong>countywide average</strong> residential assessment change in this
-        dataset ({formatCommercialGrowthPercent(tickCenter)}) — the same starting point for every
-        address.
+        center is <strong>countywide residential base growth</strong> in this dataset (
+        {formatCommercialGrowthPercent(tickCenter)} — total modeled future value ÷ total current
+        value) — the same starting point for every address.
         {parcelPct != null && (
           <>
             {' '}
