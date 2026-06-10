@@ -25,6 +25,8 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'data-'))
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +35,7 @@ jobs:
 
       - name: Fetch data release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "release" ]; then
@@ -41,15 +43,31 @@ jobs:
           elif [ -n "${{ inputs.data_release }}" ]; then
             TAG="${{ inputs.data_release }}"
           else
-            TAG=$(gh release list --limit 20 --json tagName \
-              --jq '[.[].tagName | select(startswith("data-"))][0]')
+            TAG=$(curl -s \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases?per_page=20" \
+              | jq -r '[.[].tag_name | select(startswith("data-"))][0]')
           fi
           if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
             echo "::error::No GitHub release tag starting with data-. Publish one first (see DEPLOY.md)."
             exit 1
           fi
           echo "Using data release: ${TAG}"
-          gh release download "${TAG}" --pattern 'data-bundle.zip' --dir /tmp
+          asset_id=$(curl -s \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" \
+            | jq -r '.assets[] | select(.name=="data-bundle.zip") | .id')
+          if [ -z "${asset_id}" ] || [ "${asset_id}" = "null" ]; then
+            echo "::error::Release ${TAG} has no data-bundle.zip asset."
+            exit 1
+          fi
+          curl -L \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}" \
+            -o /tmp/data-bundle.zip
           unzip -o /tmp/data-bundle.zip -d data/
 
       # Millage tables ship with app code (split-rate rules, Pittsburgh levies, etc.).

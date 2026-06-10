@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: update-data-${{ github.repository }}
@@ -115,6 +116,19 @@ jobs:
             (predictions SHA: ${{ steps.changes.outputs.new_sha }}).
           files: data/data-bundle.zip
           generate_release_notes: false
+
+      # GITHUB_TOKEN-created releases do not trigger release workflows; dispatch deploy explicitly.
+      - name: Trigger deploy
+        if: steps.changes.outputs.changed == 'true' && (github.event_name != 'workflow_dispatch' || inputs.deploy)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/dispatches" \
+            -d "{\"ref\":\"main\",\"inputs\":{\"data_release\":\"${{ steps.release_tag.outputs.tag }}\"}}"
+          echo "Triggered deploy for ${{ steps.release_tag.outputs.tag }}"
 
       - name: No upstream changes
         if: steps.changes.outputs.changed != 'true'
