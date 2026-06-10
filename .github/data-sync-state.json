@@ -1,6 +1,6 @@
 {
-  "agc_predictions_sha": "",
+  "agc_predictions_sha": "fe185e25adda065fa36ae8f78647fc737cb0d91f",
   "agc_ref": "main",
-  "last_rebuild_utc": null,
+  "last_rebuild_utc": "2026-06-10T15:30:53Z",
   "predictions_file": "residential_predictions.csv"
 }
