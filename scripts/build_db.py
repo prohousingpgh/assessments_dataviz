@@ -165,6 +165,8 @@ def load_predictions(predictions_path: Path) -> pd.DataFrame:
         "NEW_ASSESSMENT_TOTAL": "new_assessment_total",
     }
     df = df.rename(columns=rename)
+    # Upstream CSV may ship VALUATION_RATIO; we recompute median-scaled ratio in attach_valuation_ratio.
+    df = df.drop(columns=[c for c in ("VALUATION_RATIO", "valuation_ratio") if c in df.columns])
     df = df[df["use_description"].map(lambda u: is_homeowner_use(str(u)))]
     for col in [
         "land_area_sqft",
