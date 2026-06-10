@@ -13,6 +13,7 @@ import base64
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -37,13 +38,43 @@ def _gh_api(path: str, token: str) -> bytes:
 
 
 def _download_raw(repo: str, ref: str, path: str, dest: Path, token: str) -> None:
-    url = f"https://api.github.com/repos/{repo}/contents/{path}?ref={ref}"
-    payload = json.loads(_gh_api(url.replace("https://api.github.com", ""), token))
-    if not isinstance(payload, dict) or payload.get("encoding") != "base64":
+    """Download a file from a repo path, handling GitHub's 1 MB inline content limit."""
+    api_path = f"/repos/{repo}/contents/{path}?ref={ref}"
+    payload = json.loads(_gh_api(api_path, token))
+    if not isinstance(payload, dict):
         raise RuntimeError(f"Unexpected GitHub contents response for {path}")
 
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(base64.b64decode(payload["content"].replace("\n", "")))
+
+    if payload.get("encoding") == "base64" and payload.get("content"):
+        dest.write_bytes(base64.b64decode(payload["content"].replace("\n", "")))
+        return
+
+    # Files over ~1 MB omit inline content; stream via raw contents or download URL.
+    raw_url = f"https://api.github.com{api_path}"
+    for url in (raw_url, payload.get("download_url")):
+        if not url:
+            continue
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Accept": "application/vnd.github.raw",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=600) as resp, dest.open("wb") as out:
+                while True:
+                    chunk = resp.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    out.write(chunk)
+            return
+        except urllib.error.HTTPError:
+            continue
+
+    raise RuntimeError(f"Could not download {path} from {repo}@{ref}")
 
 
 def list_output_files(repo: str, ref: str, token: str) -> list[str]:
