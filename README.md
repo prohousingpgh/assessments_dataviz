@@ -115,4 +115,4 @@ Uses 2026 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`,
 - [ ] Jack Billings - Verify Homestead Exclusions for every school district and municipality
 - [ ] Jack Billings - Confirm that data/homestead_exclusions.json has the right tax year (2026, not 2025).
 - [ ] Neighborhood map (vector tiles from `predictions.parquet`; centroid map + PMTiles build scripts in repo)
-- [ ] Automated data bundle from agc_assessments CI
+- [x] Automated data bundle from agc_assessments CI (see [DEPLOY.md](DEPLOY.md#automated-rebuilds-recommended))

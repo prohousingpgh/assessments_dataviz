@@ -80,7 +80,9 @@ Push to `main` triggers GitHub Actions deploy to Fly.io ([explorer.prohousingpgh
 
 CI downloads the newest `data-*` release, then **restores `data/millage_2025.json` and `data/millage_2026.json` from the commit** so data bundles cannot overwrite split-rate or other tax config. See `.github/workflows/deploy.yml`.
 
-New predictions require: rebuild DB → new `data-*` release → push to `main`.
+**Automated data updates:** when [agc_assessments](https://github.com/prohousingpgh/agc_assessments) changes `output/`, the update-data workflow fetches predictions, runs `scripts/rebuild_data_bundle.py`, publishes a `data-*` release, and deploys. County slider midpoint and map center update automatically from the rebuilt DB. See [DEPLOY.md](DEPLOY.md#automated-rebuilds-recommended).
+
+Manual fallback: `python scripts/rebuild_data_bundle.py` → new `data-*` release.
 
 ## Workflow
 

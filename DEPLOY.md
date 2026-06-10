@@ -47,6 +47,32 @@ gh release create $tag data/data-bundle.zip --title "Runtime data $tag"
 
 Release tags **must** start with `data-` (e.g. `data-2026-05-20`). Deploy uses the newest matching tag.
 
+### Automated rebuilds (recommended)
+
+When [agc_assessments](https://github.com/prohousingpgh/agc_assessments) updates `output/`, the [Update data bundle](.github/workflows/update-data.yml) workflow can rebuild and publish a new `data-*` release automatically:
+
+| Trigger | When |
+|---------|------|
+| `repository_dispatch` | agc_assessments pushes to `output/` (see [docs/agc-dispatch-workflow.yml](docs/agc-dispatch-workflow.yml)) |
+| Daily schedule | Checks whether `residential_predictions.csv` changed (SHA in `.github/data-sync-state.json`) |
+| Manual | Actions → Update data bundle → Run workflow |
+
+**One-time setup**
+
+1. Create a GitHub Release tagged **`sources`** with `assessments_wprdc.csv` and `parcel_centroids.csv` (WPRDC files not in agc_assessments).
+2. If `agc_assessments` is private, add secret **`AGC_ASSESSMENTS_TOKEN`** (PAT with `repo` read) to this repo.
+3. In agc_assessments, add the dispatch workflow from [docs/agc-dispatch-workflow.yml](docs/agc-dispatch-workflow.yml) and secret **`NOTIFY_DATAVIZ_TOKEN`** (PAT with `repo` on assessments_dataviz).
+
+**Local rebuild from upstream:**
+
+```powershell
+$env:GH_TOKEN = "ghp_..."   # or gh auth login
+python scripts/rebuild_data_bundle.py
+gh release create "data-$(Get-Date -Format yyyy-MM-dd)" data/data-bundle.zip
+```
+
+County-wide slider midpoint and map color center are **recomputed from the new database** (dollar-weighted county base growth); no manual reset needed.
+
 ## 3. Create the Fly app
 
 ```powershell
@@ -99,7 +125,7 @@ Add the DNS records `fly certs show` prints. HTTPS is automatic.
 | Change | Action |
 |--------|--------|
 | App code (UI/API) | Push to `main` (CI deploys) or `fly deploy` |
-| Predictions / assessments | Rebuild DB → new `data-*` release → push to `main` or `fly deploy` |
+| Predictions / assessments | Automatic via update-data workflow, or manual rebuild → `data-*` release |
 | Millage only | `python scripts/fetch_millage.py --year 2026`, rebuild DB, new data release |
 
 ## Troubleshooting

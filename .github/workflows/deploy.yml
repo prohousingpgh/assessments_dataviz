@@ -3,7 +3,16 @@ name: Deploy
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - ".github/data-sync-state.json"
   workflow_dispatch:
+    inputs:
+      data_release:
+        description: data-* release tag to deploy (default latest)
+        required: false
+        type: string
+  release:
+    types: [published]
 
 concurrency:
   group: deploy-${{ github.repository }}
@@ -11,6 +20,10 @@ concurrency:
 
 jobs:
   deploy:
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'data-'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,13 +31,19 @@ jobs:
       - name: Install Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Fetch latest data release
+      - name: Fetch data release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG=$(gh release list --limit 20 --json tagName \
-            --jq '[.[].tagName | select(startswith("data-"))][0]')
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          elif [ -n "${{ inputs.data_release }}" ]; then
+            TAG="${{ inputs.data_release }}"
+          else
+            TAG=$(gh release list --limit 20 --json tagName \
+              --jq '[.[].tagName | select(startswith("data-"))][0]')
+          fi
           if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
             echo "::error::No GitHub release tag starting with data-. Publish one first (see DEPLOY.md)."
             exit 1

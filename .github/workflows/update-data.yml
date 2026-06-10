@@ -1,0 +1,101 @@
+name: Update data bundle
+
+on:
+  # Trigger from agc_assessments after output/ is committed (see docs/agc-dispatch-workflow.yml).
+  repository_dispatch:
+    types: [agc_output_updated]
+  schedule:
+    # Daily check for new agc_assessments output (skips if SHA unchanged).
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if agc predictions SHA is unchanged
+        type: boolean
+        default: false
+      deploy:
+        description: Publish release and trigger deploy
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install GitHub CLI
+        run: |
+          type gh >/dev/null 2>&1 || sudo apt-get update && sudo apt-get install -y gh
+
+      - name: Check for upstream changes
+        id: changes
+        env:
+          GH_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          NEW_SHA=$(python scripts/fetch_agc_output.py --print-sha)
+          echo "new_sha=${NEW_SHA}" >> "$GITHUB_OUTPUT"
+          if [ -f .github/data-sync-state.json ]; then
+            OLD_SHA=$(python -c "import json; print(json.load(open('.github/data-sync-state.json')).get('agc_predictions_sha',''))")
+          else
+            OLD_SHA=""
+          fi
+          echo "old_sha=${OLD_SHA}" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif [ "${NEW_SHA}" != "${OLD_SHA}" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rebuild data bundle
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN || github.token }}
+        run: python scripts/rebuild_data_bundle.py
+
+      - name: Commit sync state
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/data-sync-state.json
+          git diff --staged --quiet || git commit -m "Update data sync state after agc_assessments rebuild."
+          git push
+
+      - name: Publish data release
+        if: steps.changes.outputs.changed == 'true' && (github.event_name != 'workflow_dispatch' || inputs.deploy)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="data-$(date -u +%Y-%m-%d)"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            TAG="${TAG}-${GITHUB_RUN_ID}"
+          fi
+          gh release create "${TAG}" data/data-bundle.zip \
+            --title "Runtime data ${TAG}" \
+            --notes "Rebuilt from agc_assessments output (predictions SHA: ${{ steps.changes.outputs.new_sha }})."
+          echo "Published ${TAG} (deploy workflow runs via release event)."
+
+      - name: No upstream changes
+        if: steps.changes.outputs.changed != 'true'
+        run: echo "agc_assessments predictions unchanged (${{ steps.changes.outputs.new_sha }}); skipping rebuild."
