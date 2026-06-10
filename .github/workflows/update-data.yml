@@ -28,6 +28,8 @@ concurrency:
 jobs:
   rebuild:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -76,6 +78,8 @@ jobs:
 
       - name: Commit sync state
         if: steps.changes.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -83,20 +87,34 @@ jobs:
           git diff --staged --quiet || git commit -m "Update data sync state after agc_assessments rebuild."
           git push
 
-      - name: Publish data release
+      - name: Resolve release tag
         if: steps.changes.outputs.changed == 'true' && (github.event_name != 'workflow_dispatch' || inputs.deploy)
+        id: release_tag
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           TAG="data-$(date -u +%Y-%m-%d)"
-          if gh release view "${TAG}" >/dev/null 2>&1; then
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}")
+          if [ "${code}" = "200" ]; then
             TAG="${TAG}-${GITHUB_RUN_ID}"
           fi
-          gh release create "${TAG}" data/data-bundle.zip \
-            --title "Runtime data ${TAG}" \
-            --notes "Rebuilt from agc_assessments output (predictions SHA: ${{ steps.changes.outputs.new_sha }})."
-          echo "Published ${TAG} (deploy workflow runs via release event)."
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish data release
+        if: steps.changes.outputs.changed == 'true' && (github.event_name != 'workflow_dispatch' || inputs.deploy)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Runtime data ${{ steps.release_tag.outputs.tag }}
+          body: >-
+            Rebuilt from agc_assessments output
+            (predictions SHA: ${{ steps.changes.outputs.new_sha }}).
+          files: data/data-bundle.zip
+          generate_release_notes: false
 
       - name: No upstream changes
         if: steps.changes.outputs.changed != 'true'
