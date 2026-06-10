@@ -26,9 +26,32 @@ SOURCES_DEST = DATA_DIR / "sources"
 STATE_PATH = ROOT / ".github" / "data-sync-state.json"
 
 
-def _run(cmd: list[str]) -> None:
+def _run(cmd: list[str], *, env: dict[str, str] | None = None) -> None:
     print("+", " ".join(cmd))
-    subprocess.run(cmd, check=True, cwd=ROOT)
+    subprocess.run(cmd, check=True, cwd=ROOT, env=env)
+
+
+def _env_with_token(token: str | None) -> dict[str, str]:
+    import os
+
+    merged = os.environ.copy()
+    if token:
+        merged["GH_TOKEN"] = token
+    return merged
+
+
+def _agc_token() -> str | None:
+    import os
+
+    return os.environ.get("AGC_ASSESSMENTS_TOKEN") or os.environ.get("GH_TOKEN") or os.environ.get(
+        "GITHUB_TOKEN"
+    )
+
+
+def _repo_token() -> str | None:
+    import os
+
+    return os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
 
 
 def main() -> None:
@@ -55,9 +78,15 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.skip_fetch:
-        _run([sys.executable, "scripts/fetch_agc_output.py", "--dest", str(AGC_DEST), "--ref", args.agc_ref])
+        _run(
+            [sys.executable, "scripts/fetch_agc_output.py", "--dest", str(AGC_DEST), "--ref", args.agc_ref],
+            env=_env_with_token(_agc_token()),
+        )
         try:
-            _run([sys.executable, "scripts/fetch_data_sources.py", "--dest", str(SOURCES_DEST)])
+            _run(
+                [sys.executable, "scripts/fetch_data_sources.py", "--dest", str(SOURCES_DEST)],
+                env=_env_with_token(_repo_token()),
+            )
         except subprocess.CalledProcessError:
             print(
                 "Warning: sources release not found; continuing if data/sources/ already has CSVs.",
@@ -120,6 +149,7 @@ def main() -> None:
         [sys.executable, "scripts/fetch_agc_output.py", "--print-sha", "--ref", args.agc_ref],
         text=True,
         cwd=ROOT,
+        env=_env_with_token(_agc_token()),
     ).strip()
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     STATE_PATH.write_text(

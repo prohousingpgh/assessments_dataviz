@@ -85,6 +85,17 @@ def list_output_files(repo: str, ref: str, token: str) -> list[str]:
     return [item["name"] for item in payload if item.get("type") == "file"]
 
 
+def _token(token: str | None = None) -> str:
+    if token:
+        return token
+    return (
+        os.environ.get("AGC_ASSESSMENTS_TOKEN")
+        or os.environ.get("GH_TOKEN")
+        or os.environ.get("GITHUB_TOKEN")
+        or ""
+    )
+
+
 def fetch_output(
     *,
     repo: str = DEFAULT_REPO,
@@ -92,9 +103,9 @@ def fetch_output(
     dest: Path = DEFAULT_DEST,
     token: str | None = None,
 ) -> list[Path]:
-    token = token or os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    token = _token(token)
     if not token:
-        raise SystemExit("Set GH_TOKEN or GITHUB_TOKEN to download from GitHub.")
+        raise SystemExit("Set AGC_ASSESSMENTS_TOKEN, GH_TOKEN, or GITHUB_TOKEN to download from GitHub.")
 
     dest.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
@@ -108,9 +119,9 @@ def fetch_output(
 
 def predictions_sha(repo: str, ref: str, token: str | None = None) -> str:
     """Git blob SHA for output/residential_predictions.csv (change detection)."""
-    token = token or os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    token = _token(token)
     if not token:
-        raise SystemExit("Set GH_TOKEN or GITHUB_TOKEN.")
+        raise SystemExit("Set AGC_ASSESSMENTS_TOKEN, GH_TOKEN, or GITHUB_TOKEN.")
     path = f"/repos/{repo}/contents/{OUTPUT_DIR}/residential_predictions.csv?ref={ref}"
     payload = json.loads(_gh_api(path, token))
     return str(payload["sha"])

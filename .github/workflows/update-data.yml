@@ -45,6 +45,7 @@ jobs:
       - name: Check for upstream changes
         id: changes
         env:
+          AGC_ASSESSMENTS_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN }}
           GH_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN || github.token }}
         run: |
           set -euo pipefail
@@ -69,7 +70,8 @@ jobs:
       - name: Rebuild data bundle
         if: steps.changes.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN || github.token }}
+          AGC_ASSESSMENTS_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: python scripts/rebuild_data_bundle.py
 
       - name: Commit sync state
