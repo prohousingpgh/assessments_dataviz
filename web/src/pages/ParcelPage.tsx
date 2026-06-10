@@ -28,6 +28,7 @@ import {
 } from '../homesteadExemption'
 import { applyParcelTaxAdjustments } from '../taxAdjustments'
 import { countyBaseGrowthFromSummary } from '../countyGrowth'
+import { ParcelPageSkeleton } from '../components/skeletons/ParcelPageSkeleton'
 
 function hasCommercialSlider(taxes: PropertyTaxes): boolean {
   const bases = taxes.revenue_neutral_bases
@@ -170,7 +171,7 @@ export function ParcelPage() {
 
   usePageTitle(parcel?.address_display ?? 'Your home')
 
-  if (loading) return <p className="page-meta">Loading your home…</p>
+  if (loading) return <ParcelPageSkeleton />
   if (error || !parcel) {
     return (
       <div className="page">

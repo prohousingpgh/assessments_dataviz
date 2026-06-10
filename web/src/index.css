@@ -1282,3 +1282,128 @@ a {
 .hex-surface-map {
   height: min(72vh, 620px);
 }
+
+/* Skeleton loaders */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  display: inline-block;
+  max-width: 100%;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--brand-h), 18%, 90%) 0%,
+    hsl(var(--brand-h), 22%, 96%) 45%,
+    hsl(var(--brand-h), 18%, 90%) 90%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+.skeleton-page-header {
+  margin-bottom: 1.5rem;
+}
+
+.skeleton-page-header .skeleton + .skeleton {
+  margin-top: 0.55rem;
+}
+
+.skeleton-title {
+  border-radius: 6px;
+  margin-bottom: 0.15rem;
+}
+
+.skeleton-heading {
+  border-radius: 5px;
+}
+
+.skeleton-card .skeleton-heading {
+  margin-bottom: 0;
+}
+
+.skeleton-detail-list {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.skeleton-headline-metrics {
+  margin-top: 1rem;
+}
+
+.skeleton-map-shell {
+  min-height: min(68vh, 560px);
+  height: min(68vh, 560px);
+  background: linear-gradient(
+    90deg,
+    hsl(var(--brand-h), 14%, 92%) 0%,
+    hsl(var(--brand-h), 18%, 96%) 45%,
+    hsl(var(--brand-h), 14%, 92%) 90%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+.skeleton-map-shell::after {
+  content: none;
+}
+
+.skeleton-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.45rem;
+}
+
+.skeleton-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skeleton-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.skeleton-map-section + .skeleton-map-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.search-results--skeleton {
+  pointer-events: none;
+}
+
+.search-result-skeleton {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.search-result-skeleton + .search-result-skeleton {
+  margin-top: 0.5rem;
+}
+
+.skeleton-steps {
+  margin-top: 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton-map-shell {
+    animation: none;
+    background: hsl(var(--brand-h), 18%, 92%);
+  }
+}

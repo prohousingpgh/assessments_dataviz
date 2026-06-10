@@ -4,6 +4,7 @@ import { PageHeader } from '../components/PageHeader'
 import { getHomesteadExemptions, type HomesteadExemptionsTable } from '../api'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { formatMoney } from '../format'
+import { HomesteadPageSkeleton } from '../components/skeletons/HomesteadPageSkeleton'
 
 export function HomesteadExemptionsPage() {
   usePageTitle('Homestead exclusions')
@@ -27,7 +28,7 @@ export function HomesteadExemptionsPage() {
   }, [data, filter, tab])
 
   if (error) return <p className="search-error">{error}</p>
-  if (!data) return <p className="page-meta">Loading…</p>
+  if (!data) return <HomesteadPageSkeleton />
 
   const verifiedMuni = data.metadata?.verified_municipality_count ?? 0
   const verifiedSchool = data.metadata?.verified_school_district_count ?? 0

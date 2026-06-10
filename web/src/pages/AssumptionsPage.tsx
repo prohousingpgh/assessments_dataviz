@@ -16,6 +16,7 @@ import {
   HOMESTEAD_EXCLUSION,
   PITTSBURGH_SCHOOL_HOMESTEAD_EXCLUSION,
 } from '../homesteadExemption'
+import { AssumptionsPageSkeleton } from '../components/skeletons/AssumptionsPageSkeleton'
 
 export function AssumptionsPage() {
   usePageTitle('Methodology & assumptions')
@@ -29,7 +30,7 @@ export function AssumptionsPage() {
   }, [])
 
   if (error) return <p className="search-error">{error}</p>
-  if (!manifest) return <p className="page-meta">Loading…</p>
+  if (!manifest) return <AssumptionsPageSkeleton />
 
   const ratio = manifest.county_residential_value_ratio ?? manifest.county_summary?.county_value_ratio
   const baseGrowthPct = countyBaseGrowthFromSummary(manifest.county_summary) ??

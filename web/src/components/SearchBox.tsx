@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { searchParcels } from '../api'
 import type { SearchResult } from '../types'
 import { formatMoney, formatPct } from '../format'
+import { Skeleton } from './Skeleton'
 
 type Props = {
   initialQuery?: string
@@ -65,7 +66,22 @@ export function SearchBox({ initialQuery = '', autoFocus }: Props) {
           autoComplete="street-address"
         />
       </form>
-      {loading && <p className="search-meta">Searching…</p>}
+      {loading && (
+        <>
+          <span className="visually-hidden" aria-live="polite">
+            Searching…
+          </span>
+          <ul className="search-results search-results--skeleton" aria-hidden="true">
+          {Array.from({ length: 3 }, (_, i) => (
+            <li key={i} className="search-result-skeleton">
+              <Skeleton block height={18} width="78%" />
+              <Skeleton block height={14} width="62%" style={{ marginTop: '0.4rem' }} />
+              <Skeleton block height={14} width="48%" style={{ marginTop: '0.35rem' }} />
+            </li>
+          ))}
+        </ul>
+        </>
+      )}
       {error && <p className="search-error">{error}</p>}
       {!loading && !error && query.trim().length >= 3 && results.length === 0 && (
         <p className="search-meta">No matching homes found. Try a shorter street name or add your city.</p>

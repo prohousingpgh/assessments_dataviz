@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import { RouteSkeleton } from './components/skeletons/RouteSkeleton'
 import { HomePage } from './pages/HomePage'
 
 const MapPage = lazy(() => import('./pages/MapPage').then((m) => ({ default: m.MapPage })))
@@ -16,14 +17,10 @@ const HomesteadExemptionsPage = lazy(() =>
   }))
 )
 
-function PageLoading() {
-  return <p className="page-meta">Loading…</p>
-}
-
 function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={<RouteSkeleton />}>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />

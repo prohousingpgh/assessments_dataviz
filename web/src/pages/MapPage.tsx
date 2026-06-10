@@ -26,6 +26,7 @@ import type {
   ValuationMapConfig,
   ValuationMapHexbinCollection,
 } from '../map/types'
+import { MapPageSkeleton } from '../components/skeletons/MapPageSkeleton'
 
 export function MapPage() {
   usePageTitle('Maps')
@@ -71,7 +72,9 @@ export function MapPage() {
 
   const medianRatio = valuationConfig?.county_median_assessment_ratio
   const mapsUnavailable =
-    !loading && config?.mode === 'unavailable' && valuationConfig?.mode === 'unavailable'
+    config?.mode === 'unavailable' && valuationConfig?.mode === 'unavailable'
+
+  if (loading) return <MapPageSkeleton />
 
   return (
     <div className="page page--map">
@@ -82,8 +85,6 @@ export function MapPage() {
           ratio versus the county median (<strong>1.0</strong> = typical).
         </p>
       </PageHeader>
-
-      {loading && <p className="page-meta">Loading maps…</p>}
       {error && <p className="search-error">{error}</p>}
       {mapDataError && <p className="search-error">{mapDataError}</p>}
       {valuationMapDataError && <p className="search-error">{valuationMapDataError}</p>}
@@ -116,7 +117,7 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
         </section>
       )}
 
-      {!loading && config && config.mode !== 'unavailable' && (
+      {config && config.mode !== 'unavailable' && (
         <section className="map-section">
           <h2>Assessment change</h2>
           <p className="detail-foot">
@@ -177,7 +178,7 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
         </section>
       )}
 
-      {!loading && valuationConfig && valuationConfig.mode !== 'unavailable' && (
+      {valuationConfig && valuationConfig.mode !== 'unavailable' && (
         <section className="map-section map-section--valuation">
           <h2>Valuation ratio</h2>
           <p className="detail-foot">
