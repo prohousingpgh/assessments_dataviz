@@ -1,0 +1,80 @@
+name: Inspect agc valuation date
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Search agc_assessments for valuation_date
+        env:
+          AGC_ASSESSMENTS_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN }}
+          GH_TOKEN: ${{ secrets.AGC_ASSESSMENTS_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="prohousingpgh/agc_assessments"
+          REF="main"
+
+          echo "## agc_assessments valuation date inspection" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::AGC_ASSESSMENTS_TOKEN secret is not configured."
+            exit 1
+          fi
+
+          echo "### Repository root" >> "$GITHUB_STEP_SUMMARY"
+          gh api "repos/${REPO}/contents/?ref=${REF}" --jq '.[] | "- \(.type): \(.name)"' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### Files matching valuation_date / date patterns" >> "$GITHUB_STEP_SUMMARY"
+          SEARCH=$(gh api -X GET "search/code?q=valuation_date+repo:${REPO}" --jq '.items[] | "\(.path):\(.text_matches[0].fragment // "")"' 2>/dev/null || true)
+          if [ -n "$SEARCH" ]; then
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "$SEARCH" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_No code search hits (or search unavailable)._ Trying known paths." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          for path in \
+            settings.json \
+            config/settings.json \
+            locality/settings.json \
+            localities/allegheny/settings.json \
+            allegheny/settings.json \
+            README.md; do
+            if gh api "repos/${REPO}/contents/${path}?ref=${REF}" >/tmp/agc_file.json 2>/dev/null; then
+              echo "### \`${path}\`" >> "$GITHUB_STEP_SUMMARY"
+              echo '```json' >> "$GITHUB_STEP_SUMMARY"
+              python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import base64, json, re, sys
+          data = json.load(open("/tmp/agc_file.json"))
+          content = base64.b64decode(data["content"]).decode("utf-8", errors="replace")
+          if data["name"].endswith(".json"):
+              try:
+                  obj = json.loads(content)
+                  for key in ("valuation_date", "tax_year"):
+                      if key in obj:
+                          print(f"{key}: {obj[key]}")
+                  meta = obj.get("modeling", {}).get("metadata", {})
+                  if isinstance(meta, dict) and meta.get("valuation_date"):
+                      print(f"modeling.metadata.valuation_date: {meta['valuation_date']}")
+              except json.JSONDecodeError:
+                  pass
+          for line in content.splitlines():
+              if re.search(r"valuation_date|2025-01-01|2026-01-01", line, re.I):
+                  print(line.strip())
+          PY
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          echo "### output/ files" >> "$GITHUB_STEP_SUMMARY"
+          gh api "repos/${REPO}/contents/output?ref=${REF}" --jq '.[] | "- \(.name) (\(.size) bytes)"' >> "$GITHUB_STEP_SUMMARY"
