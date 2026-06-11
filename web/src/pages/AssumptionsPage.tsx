@@ -68,7 +68,7 @@ export function AssumptionsPage() {
             apply {millageYear} nominal millage and illustrative post-reassessment rules to estimate annual
             property taxes.
           </p>
-          <p className="detail-foot">Valuation date: {manifest.valuation_date ?? '2025-01-01'}</p>
+          <p className="detail-foot">Valuation date: {manifest.valuation_date ?? '2026-01-01'}</p>
         </section>
         <section className="card">
           <h2>What we do not claim</h2>

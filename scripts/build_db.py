@@ -35,6 +35,7 @@ DEFAULT_DB = ROOT / "data" / "parcels.db"
 DEFAULT_COMMERCIAL = ROOT / "data" / "commercial_existing_valuations.csv"
 MANIFEST_PATH = ROOT / "data" / "manifest.json"
 MILLAGE_PATH = ROOT / "data" / "millage_2026.json"
+DEFAULT_AGC_SETTINGS = ROOT / "data" / "upstream" / "agc" / "settings.json"
 AGGREGATES_PATH = ROOT / "data" / "tax_aggregates.json"
 HOMESTEAD_EXCLUSION = 18_000
 COUNTY_JURISDICTION_NAME = "Allegheny County"
@@ -205,6 +206,18 @@ def attach_valuation_ratio(df: pd.DataFrame) -> tuple[pd.DataFrame, float]:
     return work, median_ratio
 
 
+def valuation_date_from_settings(settings_path: Path | None) -> str:
+    """Read OpenAvmKit valuation date from agc_assessments settings.json."""
+    if settings_path and settings_path.is_file():
+        data = json.loads(settings_path.read_text(encoding="utf-8"))
+        meta = data.get("modeling", {}).get("metadata", {})
+        if isinstance(meta, dict) and meta.get("valuation_date"):
+            return str(meta["valuation_date"])
+        if data.get("valuation_date"):
+            return str(data["valuation_date"])
+    return "2026-01-01"
+
+
 def write_manifest(
     conn: sqlite3.Connection,
     predictions_path: Path,
@@ -212,8 +225,8 @@ def write_manifest(
     assessments_path: Path | None = None,
     *,
     county_median_assessment_ratio: float | None = None,
+    settings_path: Path | None = None,
 ) -> None:
-    import json
     from datetime import datetime, timezone
 
     cur = conn.execute(
@@ -240,13 +253,16 @@ def write_manifest(
         "county_residential_value_ratio": ratio,
         "county_median_assessment_ratio": county_median_assessment_ratio,
         "methodology_url": "https://github.com/prohousingpgh/agc_assessments",
-        "valuation_date": "2025-01-01",
-        "tax_year": 2025,
+        "valuation_date": valuation_date_from_settings(
+            settings_path or DEFAULT_AGC_SETTINGS
+        ),
         "disclaimer": "Illustrative estimates only. Not official county reassessment or tax bills.",
     }
     if MILLAGE_PATH.exists():
         mill = json.loads(MILLAGE_PATH.read_text(encoding="utf-8"))
-        manifest["tax_millage_year"] = mill.get("tax_year")
+        tax_year = mill.get("tax_year", 2026)
+        manifest["tax_year"] = tax_year
+        manifest["tax_millage_year"] = tax_year
         manifest["tax_assumptions"] = (
             "See /assumptions for full detail: revenue-neutral millage per taxing body; commercial "
             "growth bands 0% / +20% / +40%; homestead $18,000 (county & municipality) and $43,750 "
@@ -448,6 +464,7 @@ def build_db(
         len(df),
         assessments_path,
         county_median_assessment_ratio=county_median_ratio,
+        settings_path=DEFAULT_AGC_SETTINGS if DEFAULT_AGC_SETTINGS.is_file() else None,
     )
     conn.close()
     print(f"Wrote {len(df):,} homeowner parcels to {db_path}")

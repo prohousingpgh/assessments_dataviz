@@ -96,6 +96,29 @@ def _token(token: str | None = None) -> str:
     )
 
 
+def fetch_settings(
+    *,
+    repo: str = DEFAULT_REPO,
+    ref: str = DEFAULT_REF,
+    dest: Path = DEFAULT_DEST,
+    token: str | None = None,
+) -> Path | None:
+    """Download agc_assessments/settings.json (OpenAvmKit valuation date metadata)."""
+    token = _token(token)
+    if not token:
+        raise SystemExit("Set AGC_ASSESSMENTS_TOKEN, GH_TOKEN, or GITHUB_TOKEN to download from GitHub.")
+
+    dest.mkdir(parents=True, exist_ok=True)
+    out = dest / "settings.json"
+    try:
+        _download_raw(repo, ref, "settings.json", out, token)
+    except Exception as exc:
+        print(f"Warning: could not fetch settings.json from {repo}@{ref}: {exc}", file=sys.stderr)
+        return None
+    print(f"Fetched settings.json ({out.stat().st_size / 1024:.1f} KB)")
+    return out
+
+
 def fetch_output(
     *,
     repo: str = DEFAULT_REPO,
@@ -114,6 +137,9 @@ def fetch_output(
         _download_raw(repo, ref, f"{OUTPUT_DIR}/{name}", out, token)
         written.append(out)
         print(f"Fetched {name} ({out.stat().st_size / 1_048_576:.1f} MB)")
+    settings = fetch_settings(repo=repo, ref=ref, dest=dest, token=token)
+    if settings:
+        written.append(settings)
     return written
 
 
