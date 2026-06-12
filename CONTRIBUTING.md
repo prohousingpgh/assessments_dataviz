@@ -61,6 +61,7 @@ Browser (Vite dev :5173 or Fly :8080)
 ## Tax logic notes
 
 - Millage is **2026** in `data/millage_2026.json`; **2025** is reference only.
+- Homestead Act 50 exclusions: `data/homestead_exclusions.json` (generated). Verified per-jurisdiction amounts go in `data/homestead_exclusion_overrides.json`; run `python scripts/build_homestead_exclusions.py` after edits.
 - Homestead exclusion ($18,000) applies to county, municipality, and school taxable value when `HOM` is set.
 - **Revenue-neutral reassessment:** each jurisdiction scales millage so total revenue stays flat; commercial growth uses a +20% baseline (0–40% range).
 - **Split-rate municipalities** (land vs building millage): City of Clairton, City of McKeesport, Clairton school district. Config in `millage_2026.json` (`split_rate_local_taxes`); math in `api/tax.py`; homestead applied to total local taxable, land first.
