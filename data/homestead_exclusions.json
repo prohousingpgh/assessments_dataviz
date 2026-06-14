@@ -1083,18 +1083,18 @@
       "notes": "Many Allegheny taxing bodies use the $18,000 exclusion when they adopt Act 50. Municipal participation varies; some set other amounts (e.g. Pittsburgh $15,000, Pine Township sets an annual maximum). Confirm with the jurisdiction before relying on this figure."
     },
     "North Allegheny": {
-      "amount": 18000,
-      "confidence": "default",
-      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
-      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
-      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion when they adopt Act 50. Municipal participation varies; some set other amounts (e.g. Pittsburgh $15,000, Pine Township sets an annual maximum). Confirm with the jurisdiction before relying on this figure."
+      "amount": 11938,
+      "confidence": "Proposed 2026-2027",
+      "source": "North Allegheny District Budget & Tax Information",
+      "source_url": "https://www.northallegheny.org/departments/finance/district-budget-and-tax-info",
+      "notes": "For 2026–27, the exact exclusion will not be known until North Allegheny adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In the proposed budget, the exclusion was $11,938.29."
     },
     "North Hills": {
-      "amount": 18000,
-      "confidence": "default",
-      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
-      "source_url": "https://www.alleghenycounty.us/Services/Property-Assessments-and-Real-Estate/Tax-Abatements-and-Exemptions/HomesteadFarmstead-Exclusion-Act-50",
-      "notes": "Many Allegheny taxing bodies use the $18,000 exclusion when they adopt Act 50. Municipal participation varies; some set other amounts (e.g. Pittsburgh $15,000, Pine Township sets an annual maximum). Confirm with the jurisdiction before relying on this figure."
+      "amount": 10705,
+      "confidence": "verified",
+      "source": "North Hills School District News",
+      "source_url": "https://www.nhsd.net/district/news/details/~board/news/post/2026-27-budget",
+      "notes": "The North Hills School District Board of Education approved the final budget for the 2026-27 school year at its meeting on June 4, 2026"
     },
     "Northgate": {
       "amount": 18000,
@@ -1223,25 +1223,25 @@
       "notes": "Many Allegheny taxing bodies use the $18,000 exclusion when they adopt Act 50. Municipal participation varies; some set other amounts (e.g. Pittsburgh $15,000, Pine Township sets an annual maximum). Confirm with the jurisdiction before relying on this figure."
     },
     "West Mifflin Area": {
-      "amount": 14658.81,
+      "amount": 14658,
       "confidence": "2025-2026",
-      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source": "West Mifflin Area School District Regular Board Meeting - June 18, 2025",
       "source_url": "https://www.wmasd.org/Downloads/June%2018%2C%202025%20Regular%20Board%20Meeting%20Public.pdf",
-      "notes": "For 2026–27, the exact exclusion won't be known until Woodland Hills adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In 2025-2206, the exclusion was $14,658.81"
+      "notes": "For 2026–27, the exact exclusion will not be known until Woodland Hills adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In 2025-2206, the exclusion was $14,658.81"
     },
     "Wilkinsburg": {
-      "amount": 20680.25,
+      "amount": 20680,
       "confidence": "Proposed 2026-2027",
-      "source": "Assumed school district default ($18,000) \u2014 Act 50 adoption not verified for this jurisdiction",
+      "source": "Wilkinsburg Borough School District - Final General Fund Budget 2026-2027",
       "source_url": "https://4.files.edl.io/6ddb/06/01/26/174100-b662f745-3ec7-493d-9415-6b1ff53e92bb.pdf",
-      "notes": "For 2026–27, the exact exclusion won't be known until Wilkinsburg adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In the proposed budget, the exclusion was $20,680.25."
+      "notes": "For 2026–27, the exact exclusion will not be known until Wilkinsburg adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In the proposed budget, the exclusion was $20,680.25."
     },
     "Woodland Hills": {
       "amount": 13083,
       "confidence": "2025-2026",
       "source": "2025 Woodland Hills School District Real Estate Information",
       "source_url": "https://4.files.edl.io/35ef/07/21/25/120448-d0086761-4573-4219-9d7b-68e1fcdd7031.pdf",
-      "notes": "For 2026–27, the exact exclusion won't be known until Woodland Hills adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In 2025-2206, the exclusion was $13,083."
+      "notes": "For 2026–27, the exact exclusion will not be known until Woodland Hills adopts its Act 1 resolution after receiving its state gaming allocation and final homestead counts. In 2025-2206, the exclusion was $13,083."
     }
   },
   "metadata": {
