@@ -38,7 +38,7 @@ export function HomesteadExemptionsPage() {
       <PageHeader title="Homestead exclusions">
         <p className="lead">
           Act 50 homestead exclusions reduce <strong>taxable assessed value</strong> before millage is
-          applied. Dollar amounts used in tax estimates for tax year {data.tax_year ?? 2025}. See also{' '}
+          applied. Dollar amounts used in tax estimates for tax year {data.tax_year ?? 2026}. See also{' '}
           <Link to="/assumptions">Methodology & assumptions</Link>.
         </p>
       </PageHeader>
