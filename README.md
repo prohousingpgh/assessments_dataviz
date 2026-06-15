@@ -112,7 +112,7 @@ Uses 2026 millage from the county treasurer, WPRDC `COUNTYTOTAL` / `LOCALTOTAL`,
 
 - [x] Property tax estimates (millage tables)
 - [x] Single-server production deploy (Docker + Fly.io + GitHub Actions)
-- [ ] Jack Billings - Verify Homestead Exclusions for every school district and municipality (add verified amounts to `data/homestead_exclusion_overrides.json`)
+- [ ] Jack Billings - Verify Homestead Exclusions for every school district and municipality (add verified amounts to `data/homestead_exclusion_overrides.json`) [2026-2027 allocation amounts can be found here: https://www.pa.gov/content/dam/copapwp-pagov/en/education/documents/schools/property-tax-relief/allocations/2026-27sptra.xlsx]
 - [x] Homestead exclusions reference uses 2026 tax year (`data/homestead_exclusions.json`; rebuild with `python scripts/build_homestead_exclusions.py`)
 - [ ] Neighborhood map (vector tiles from `predictions.parquet`; centroid map + PMTiles build scripts in repo)
 - [x] Automated data bundle from agc_assessments CI (see [DEPLOY.md](DEPLOY.md#automated-rebuilds-recommended))
