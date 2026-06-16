@@ -1,9 +1,10 @@
 """
 Rebuild runtime data from agc_assessments output + WPRDC source files.
 
-Downloads fresh predictions from agc_assessments/output/, rebuilds parcels.db,
-and writes data/data-bundle.zip. County base growth (slider midpoint, map center)
-is recomputed automatically in the new database.
+Downloads fresh predictions from agc_assessments/output/, refreshes proposed
+school homestead exclusions, rebuilds parcels.db, and writes data/data-bundle.zip.
+County base growth (slider midpoint, map center) is recomputed automatically in
+the new database.
 
 Usage:
   python scripts/rebuild_data_bundle.py
@@ -75,6 +76,12 @@ def main() -> None:
         type=Path,
         default=DATA_DIR / "data-bundle.zip",
     )
+    parser.add_argument(
+        "--sptra-workbook",
+        type=Path,
+        default=SOURCES_DEST / "2026-27sptra.xlsx",
+        help="PA property tax relief allocation workbook cache path",
+    )
     args = parser.parse_args()
 
     if not args.skip_fetch:
@@ -113,6 +120,17 @@ def main() -> None:
             "WPRDC assessments CSV not found. Add data/sources/assessments_wprdc.csv locally "
             "or publish a GitHub Release tagged 'sources' (see DEPLOY.md)."
         )
+
+    _run(
+        [
+            sys.executable,
+            "scripts/update_school_homestead_exclusions.py",
+            "--assessments",
+            str(assessments),
+            "--workbook",
+            str(args.sptra_workbook),
+        ]
+    )
 
     centroids = args.centroids
     if centroids is None:

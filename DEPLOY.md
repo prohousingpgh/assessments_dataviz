@@ -49,7 +49,7 @@ Release tags **must** start with `data-` (e.g. `data-2026-05-20`). Deploy uses t
 
 ### Automated rebuilds (recommended)
 
-When [agc_assessments](https://github.com/prohousingpgh/agc_assessments) updates `output/`, the [Update data bundle](.github/workflows/update-data.yml) workflow can rebuild and publish a new `data-*` release automatically:
+When [agc_assessments](https://github.com/prohousingpgh/agc_assessments) updates `output/`, the [Update data bundle](.github/workflows/update-data.yml) workflow can rebuild and publish a new `data-*` release automatically. The rebuild also refreshes proposed school homestead exclusions from Pennsylvania property tax relief allocations and WPRDC `HOMESTEADFLAG` counts:
 
 | Trigger | When |
 |---------|------|

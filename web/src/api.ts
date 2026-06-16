@@ -149,7 +149,7 @@ export type HomesteadExemptionEntry = {
   name: string
   taxing_body: string
   amount: number
-  confidence: 'verified' | 'default'
+  confidence: string
   source: string
   source_url?: string
   notes?: string
@@ -165,6 +165,7 @@ export type HomesteadExemptionsTable = {
     disclaimer?: string
     verified_municipality_count?: number
     verified_school_district_count?: number
+    proposed_school_district_count?: number
   }
 }
 

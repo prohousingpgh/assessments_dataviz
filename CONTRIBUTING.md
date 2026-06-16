@@ -61,7 +61,7 @@ Browser (Vite dev :5173 or Fly :8080)
 ## Tax logic notes
 
 - Millage is **2026** in `data/millage_2026.json`; **2025** is reference only.
-- Homestead Act 50 exclusions: `data/homestead_exclusions.json` (generated). Verified per-jurisdiction amounts go in `data/homestead_exclusion_overrides.json`; run `python scripts/build_homestead_exclusions.py` after edits.
+- Homestead Act 50 exclusions live in `data/homestead_exclusions.json`. Edit verified per-jurisdiction amounts there; run `python scripts/build_homestead_exclusions.py` after edits to refresh default jurisdictions while preserving non-default entries.
 - Homestead exclusion ($18,000) applies to county, municipality, and school taxable value when `HOM` is set.
 - **Revenue-neutral reassessment:** each jurisdiction scales millage so total revenue stays flat; commercial growth uses a +20% baseline (0–40% range).
 - **Split-rate municipalities** (land vs building millage): City of Clairton, City of McKeesport, Clairton school district. Config in `millage_2026.json` (`split_rate_local_taxes`); math in `api/tax.py`; homestead applied to total local taxable, land first.
@@ -81,7 +81,7 @@ Push to `main` triggers GitHub Actions deploy to Fly.io ([explorer.prohousingpgh
 
 CI downloads the newest `data-*` release, then **restores `data/millage_2025.json` and `data/millage_2026.json` from the commit** so data bundles cannot overwrite split-rate or other tax config. See `.github/workflows/deploy.yml`.
 
-**Automated data updates:** when [agc_assessments](https://github.com/prohousingpgh/agc_assessments) changes `output/`, the update-data workflow fetches predictions, runs `scripts/rebuild_data_bundle.py`, publishes a `data-*` release, and deploys. County slider midpoint and map center update automatically from the rebuilt DB. See [DEPLOY.md](DEPLOY.md#automated-rebuilds-recommended).
+**Automated data updates:** when [agc_assessments](https://github.com/prohousingpgh/agc_assessments) changes `output/`, the update-data workflow fetches predictions, runs `scripts/rebuild_data_bundle.py`, publishes a `data-*` release, and deploys. The rebuild refreshes proposed school homestead exclusions from Pennsylvania property tax relief allocations and WPRDC `HOMESTEADFLAG` counts. County slider midpoint and map center update automatically from the rebuilt DB. See [DEPLOY.md](DEPLOY.md#automated-rebuilds-recommended).
 
 Manual fallback: `python scripts/rebuild_data_bundle.py` → new `data-*` release.
 

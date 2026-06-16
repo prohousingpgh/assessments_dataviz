@@ -1,4 +1,4 @@
-"""Build data/homestead_exclusions.json from millage jurisdictions and verified Act 50 amounts."""
+"""Build data/homestead_exclusions.json from millage jurisdictions and stored Act 50 amounts."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MILLAGE = ROOT / "data" / "millage_2026.json"
-OVERRIDES_PATH = ROOT / "data" / "homestead_exclusion_overrides.json"
+SOURCE_PATH = ROOT / "data" / "homestead_exclusions.json"
 OUT_PATH = ROOT / "data" / "homestead_exclusions.json"
 
 DEFAULT_AMOUNT = 18_000
@@ -29,25 +29,34 @@ def _default_entry(kind: str) -> dict:
     }
 
 
-def _load_overrides(path: Path) -> dict:
+def _load_existing(path: Path) -> dict:
     if not path.is_file():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _preserved_entries(existing: dict, section: str) -> dict[str, dict]:
+    entries = existing.get(section, {})
+    return {
+        name: entry
+        for name, entry in entries.items()
+        if entry.get("confidence") != "default"
+    }
+
+
 def build_homestead_exclusions(
     *,
     millage_path: Path = DEFAULT_MILLAGE,
-    overrides_path: Path = OVERRIDES_PATH,
+    existing_path: Path = SOURCE_PATH,
     out_path: Path = OUT_PATH,
 ) -> dict:
     millage = json.loads(millage_path.read_text(encoding="utf-8"))
-    overrides = _load_overrides(overrides_path)
-    tax_year = overrides.get("tax_year") or millage.get("tax_year", 2026)
+    existing = _load_existing(existing_path)
+    tax_year = existing.get("tax_year") or millage.get("tax_year", 2026)
 
-    muni_overrides = overrides.get("municipalities", {})
-    school_overrides = overrides.get("school_districts", {})
-    county_entry = overrides.get("county") or {
+    muni_entries = _preserved_entries(existing, "municipalities")
+    school_entries = _preserved_entries(existing, "school_districts")
+    county_entry = existing.get("county") or {
         "amount": DEFAULT_AMOUNT,
         "confidence": "verified",
         "source": "Allegheny County Act 50 homestead exclusion (county real estate tax)",
@@ -57,11 +66,11 @@ def build_homestead_exclusions(
 
     municipalities: dict[str, dict] = {}
     for name in sorted(millage["municipality_mills"]):
-        municipalities[name] = {**_default_entry("municipality"), **muni_overrides.get(name, {})}
+        municipalities[name] = {**_default_entry("municipality"), **muni_entries.get(name, {})}
 
     schools: dict[str, dict] = {}
     for name in sorted(millage["school_mills"]):
-        schools[name] = {**_default_entry("school district"), **school_overrides.get(name, {})}
+        schools[name] = {**_default_entry("school district"), **school_entries.get(name, {})}
 
     verified_muni = sum(1 for v in municipalities.values() if v["confidence"] == "verified")
     verified_school = sum(1 for v in schools.values() if v["confidence"] == "verified")
@@ -75,7 +84,7 @@ def build_homestead_exclusions(
         "metadata": {
             "generated_by": "scripts/build_homestead_exclusions.py",
             "millage_source": str(millage_path.relative_to(ROOT)),
-            "overrides_source": str(overrides_path.relative_to(ROOT)) if overrides_path.is_file() else None,
+            "source": str(existing_path.relative_to(ROOT)) if existing_path.is_file() else None,
             "municipality_count": len(municipalities),
             "school_district_count": len(schools),
             "verified_municipality_count": verified_muni,
@@ -94,13 +103,13 @@ def build_homestead_exclusions(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--millage", type=Path, default=DEFAULT_MILLAGE)
-    parser.add_argument("--overrides", type=Path, default=OVERRIDES_PATH)
+    parser.add_argument("--existing", type=Path, default=SOURCE_PATH)
     parser.add_argument("--output", type=Path, default=OUT_PATH)
     args = parser.parse_args()
 
     payload = build_homestead_exclusions(
         millage_path=args.millage,
-        overrides_path=args.overrides,
+        existing_path=args.existing,
         out_path=args.output,
     )
     args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
