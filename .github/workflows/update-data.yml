@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
@@ -123,11 +124,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -s -X POST \
+          set -euo pipefail
+          code=$(curl -s -o /tmp/deploy-dispatch.json -w "%{http_code}" -X POST \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/dispatches" \
-            -d "{\"ref\":\"main\",\"inputs\":{\"data_release\":\"${{ steps.release_tag.outputs.tag }}\"}}"
+            -d "{\"ref\":\"main\",\"inputs\":{\"data_release\":\"${{ steps.release_tag.outputs.tag }}\"}}")
+          if [ "${code}" != "204" ]; then
+            echo "::error::Deploy dispatch failed (HTTP ${code}): $(cat /tmp/deploy-dispatch.json)"
+            exit 1
+          fi
           echo "Triggered deploy for ${{ steps.release_tag.outputs.tag }}"
 
       - name: No upstream changes
