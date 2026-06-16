@@ -32,6 +32,13 @@ export function HomesteadExemptionsPage() {
 
   const verifiedMuni = data.metadata?.verified_municipality_count ?? 0
   const verifiedSchool = data.metadata?.verified_school_district_count ?? 0
+  const proposedSchool = data.metadata?.proposed_school_district_count ?? 0
+  const confidenceClass = (confidence: string) => {
+    const normalized = confidence.toLowerCase()
+    if (normalized === 'verified') return 'verified'
+    if (normalized.startsWith('proposed')) return 'proposed'
+    return 'default'
+  }
 
   return (
     <div className="page">
@@ -98,7 +105,9 @@ export function HomesteadExemptionsPage() {
         </div>
         <p className="page-meta">
           Verified locally: {verifiedMuni} municipalities, {verifiedSchool} school districts. Rows
-          marked <em>default</em> use {formatMoney(data.default_exclusion)} until confirmed.
+          marked <em>proposed</em> are computed from state property tax relief allocations and
+          homestead counts ({proposedSchool} school districts). Rows marked <em>default</em> use{' '}
+          {formatMoney(data.default_exclusion)} until confirmed.
         </p>
         <div className="table-scroll">
           <table className="tax-table homestead-table">
@@ -119,11 +128,7 @@ export function HomesteadExemptionsPage() {
                   <td className="num">{formatMoney(row.amount)}</td>
                   <td>
                     <span
-                      className={
-                        row.confidence === 'verified'
-                          ? 'confidence-pill verified'
-                          : 'confidence-pill default'
-                      }
+                      className={`confidence-pill ${confidenceClass(row.confidence)}`}
                     >
                       {row.confidence}
                     </span>
