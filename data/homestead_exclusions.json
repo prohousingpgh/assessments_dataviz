@@ -1247,7 +1247,6 @@
   "metadata": {
     "generated_by": "scripts/build_homestead_exclusions.py",
     "millage_source": "data/millage_2026.json",
-    "overrides_source": "data/homestead_exclusion_overrides.json",
     "municipality_count": 130,
     "school_district_count": 46,
     "verified_municipality_count": 2,
