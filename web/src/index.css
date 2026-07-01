@@ -92,15 +92,19 @@ a {
 }
 
 .site-beta {
-  margin-left: 0.2em;
-  padding: 0;
-  font-size: 0.52em;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  display: inline-block;
+  margin-left: 0.45em;
+  padding: 0.2em 0.55em;
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  line-height: 0;
-  color: rgba(255, 255, 255, 0.55);
-  vertical-align: super;
+  line-height: 1.2;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  vertical-align: middle;
   text-decoration: none;
 }
 
@@ -493,6 +497,65 @@ a {
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.mills-summary {
+  margin-bottom: 1rem;
+}
+
+.mills-summary-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.mills-summary-intro {
+  margin: 0 0 1rem;
+}
+
+.mills-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+.mills-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.mills-summary-rate {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.mills-summary-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 0.1rem;
+}
+
+.parcel-estimates-note,
+.home-estimates-note {
+  margin-top: 0.85rem;
+  margin-bottom: 0;
+}
+
+.home-estimates-note {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 720px) {
+  .mills-summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {

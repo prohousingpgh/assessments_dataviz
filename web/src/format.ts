@@ -45,6 +45,21 @@ export function formatJurisdictionName(name: string | null | undefined): string 
     .join(' ')
 }
 
+/** Round modeled assessments to a band for display (e.g. $753,467 → $750k–$760k). */
+const ASSESSMENT_ROUND_STEP = 10_000
+
+export function assessmentBand(value: number): { low: number; high: number } {
+  const low = Math.floor(value / ASSESSMENT_ROUND_STEP) * ASSESSMENT_ROUND_STEP
+  const high = Math.ceil(value / ASSESSMENT_ROUND_STEP) * ASSESSMENT_ROUND_STEP
+  return { low, high }
+}
+
+export function formatAssessmentRange(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  const { low, high } = assessmentBand(value)
+  return formatMoneyRange(low, high)
+}
+
 /** Currency range with the smaller amount first (scenario labels may not match tax order). */
 export function formatMoneyRange(a: number, b: number): string {
   const min = Math.min(a, b)

@@ -16,6 +16,7 @@ import {
   describeCommercialGrowthAssumption,
 } from '../commercialGrowth'
 import {
+  formatAssessmentRange,
   formatJurisdictionName,
   formatMoney,
   formatNumber,
@@ -203,6 +204,10 @@ export function ParcelPage() {
           Parcel {parcel.parcel_id} ·{' '}
           <Link to={`/map?parcel=${encodeURIComponent(parcel.parcel_id)}`}>View on map</Link>
         </p>
+        <aside className="callout callout-info parcel-estimates-note">
+          Reassessed values and tax figures below are <strong>modeled estimates</strong> — not
+          official county assessments or tax bills.
+        </aside>
       </PageHeader>
 
       <div className="compare-grid">
@@ -234,11 +239,11 @@ export function ParcelPage() {
         </section>
 
         <section className="card card-accent">
-          <h2>Reassessed value (modeled)</h2>
+          <h2>Reassessed value (estimated)</h2>
           <div className="headline-metrics">
             <div className="headline-metric">
-              <p className="headline-label">Assessed value</p>
-              <p className="stat-value">{formatMoney(parcel.new_assessment_total)}</p>
+              <p className="headline-label">Estimated assessed value</p>
+              <p className="stat-value">{formatAssessmentRange(parcel.new_assessment_total)}</p>
             </div>
             <div className="headline-metric">
               <p className="headline-label">Estimated taxes / year</p>
@@ -288,13 +293,42 @@ export function ParcelPage() {
             )}
           </dl>
           <p className="detail-foot">
-            Based on recent sales and property characteristics (OpenAvmKit ensemble model).
+            Based on recent sales and property characteristics (OpenAvmKit ensemble model). Estimated
+            values are rounded to the nearest $10,000.
           </p>
           {taxes && hasCommercialSlider(taxes) && (
             <p className="detail-foot">{commercialAssumptionNote}</p>
           )}
         </section>
       </div>
+
+      {taxes && displayTaxes && (
+        <section className="mills-summary card" aria-label="Tax millage rates">
+          <h2 className="mills-summary-title">Millage rates</h2>
+          <p className="detail-foot mills-summary-intro">
+            {taxes.tax_year ? `${taxes.tax_year} nominal millage` : '2026 nominal millage'} for the
+            three main taxing bodies. After reassessment, rates adjust so each jurisdiction collects
+            the same total revenue.
+          </p>
+          <div className="mills-summary-grid">
+            <MillageSummaryItem
+              kind="county"
+              line={displayTaxes.current.county}
+              future={displayTaxes.future.county}
+            />
+            <MillageSummaryItem
+              kind="municipality"
+              line={displayTaxes.current.municipality}
+              future={displayTaxes.future.municipality}
+            />
+            <MillageSummaryItem
+              kind="school"
+              line={displayTaxes.current.school}
+              future={displayTaxes.future.school}
+            />
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <h2>Nearby parcels</h2>
@@ -549,6 +583,30 @@ function HomesteadHelpText({
       <Link to="/homestead-exemptions">Full reference table</Link>. County uses county assessed value;
       city and school use local assessed value.
     </p>
+  )
+}
+
+function MillageSummaryItem({
+  kind,
+  line,
+  future,
+}: {
+  kind: TaxingBodyKind
+  line: PropertyTaxes['current']['county']
+  future: PropertyTaxes['future']['county']
+}) {
+  return (
+    <div className="mills-summary-item">
+      <TaxingBodyLabel kind={kind} name={line.label} />
+      <p className="mills-summary-rate">
+        <span className="mills-summary-label">Today</span>
+        {formatCurrentMillsNote(line)}
+      </p>
+      <p className="mills-summary-rate">
+        <span className="mills-summary-label">After reassessment</span>
+        {formatFutureMillsNote(future)}
+      </p>
+    </div>
   )
 }
 

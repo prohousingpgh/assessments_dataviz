@@ -12,10 +12,14 @@ export function HomePage() {
     <div className="page">
       <PageHeader title="Look up your home">
         <p className="lead">
-          Enter your Allegheny County address to compare today&apos;s assessed value with modeled
-          values if the county reassesses residential properties.
+          Enter your Allegheny County address to see <strong>illustrative estimates</strong> of how
+          your home might be valued if the county reassesses residential properties.
         </p>
       </PageHeader>
+
+      <aside className="callout callout-info home-estimates-note">
+        These are modeled estimates from OpenAvmKit — not official county assessments or tax bills.
+      </aside>
 
       <section className="card panel">
         <SearchBox autoFocus />
@@ -112,9 +116,6 @@ export function HomePage() {
         </p>
       </section>
 
-      <aside className="callout callout-info">
-        These are illustrative estimates from OpenAvmKit modeling — not official county figures.
-      </aside>
     </div>
   )
 }
