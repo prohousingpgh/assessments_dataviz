@@ -47,8 +47,8 @@ export function Layout() {
           </nav>
         </div>
         <p className="site-tagline">
-          Public beta · Illustrative reassessment estimates for Allegheny County homeowners — not
-          official county figures
+          Illustrative reassessment estimates for Allegheny County homeowners — not official county
+          figures
         </p>
       </header>
       <main className="main-content">

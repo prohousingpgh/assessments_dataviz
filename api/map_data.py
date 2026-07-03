@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,27 @@ from api.db import get_summary_stats
 
 ROOT = Path(__file__).resolve().parents[1]
 PMTILES_PATH = ROOT / "data" / "parcels.pmtiles"
+
+_map_cache_lock = threading.Lock()
+_median_assessment_ratio_cache: float | None = None
+_county_map_center_pct_cache: float | None = None
+_hexbin_response_cache: dict[tuple[str, float, int], dict[str, Any]] = {}
+
+
+def _normalize_hexbin_params(hex_size_deg: float, min_count: int) -> tuple[float, int]:
+    return (
+        max(0.0025, min(0.03, float(hex_size_deg))),
+        max(1, min(500, int(min_count))),
+    )
+
+
+def clear_map_data_cache() -> None:
+    """Reset cached county aggregates and hexbin responses (e.g. after DB rebuild)."""
+    global _median_assessment_ratio_cache, _county_map_center_pct_cache
+    with _map_cache_lock:
+        _median_assessment_ratio_cache = None
+        _county_map_center_pct_cache = None
+        _hexbin_response_cache.clear()
 
 # Allegheny County approximate bounds (WGS84).
 DEFAULT_BOUNDS: dict[str, float] = {
@@ -39,6 +61,19 @@ VALUATION_RATIO_BINS: list[dict[str, Any]] = [
     {"color": "#fdae61", "label": "1.2 – 1.3", "ratio": 1.2},
     {"color": "#f46d43", "label": "1.3 – 1.5", "ratio": 1.3},
     {"color": "#d73027", "label": "> 1.5", "ratio": 1.5},
+]
+
+# Annual tax change ($/yr); pct field stores dollars for color stops.
+TAX_DELTA_SPAN_DOLLARS = 2400
+
+TAX_DELTA_COLOR_STOPS: list[dict[str, Any]] = [
+    {"pct": -2400, "color": "#006837"},
+    {"pct": -1200, "color": "#31a354"},
+    {"pct": -400, "color": "#a1d99b"},
+    {"pct": 0, "color": "#ffffbf"},
+    {"pct": 400, "color": "#fcae91"},
+    {"pct": 1200, "color": "#de2d26"},
+    {"pct": 2400, "color": "#a50026"},
 ]
 
 
@@ -104,21 +139,30 @@ def _has_column(conn: sqlite3.Connection, column: str) -> bool:
 
 
 def _county_median_assessment_ratio(conn: sqlite3.Connection) -> float:
-    rows = conn.execute(
-        """
-        SELECT new_assessment_total * 1.0 / current_assessment_total AS assessment_ratio
-        FROM parcels
-        WHERE current_assessment_total > 0 AND new_assessment_total > 0
-        """
-    ).fetchall()
-    ratios = sorted(float(r["assessment_ratio"]) for r in rows)
-    n = len(ratios)
-    if n == 0:
-        return 1.0
-    mid = n // 2
-    if n % 2 == 1:
-        return ratios[mid]
-    return (ratios[mid - 1] + ratios[mid]) / 2.0
+    global _median_assessment_ratio_cache
+    if _median_assessment_ratio_cache is not None:
+        return _median_assessment_ratio_cache
+    with _map_cache_lock:
+        if _median_assessment_ratio_cache is not None:
+            return _median_assessment_ratio_cache
+        rows = conn.execute(
+            """
+            SELECT new_assessment_total * 1.0 / current_assessment_total AS assessment_ratio
+            FROM parcels
+            WHERE current_assessment_total > 0 AND new_assessment_total > 0
+            """
+        ).fetchall()
+        ratios = sorted(float(r["assessment_ratio"]) for r in rows)
+        n = len(ratios)
+        if n == 0:
+            _median_assessment_ratio_cache = 1.0
+        else:
+            mid = n // 2
+            if n % 2 == 1:
+                _median_assessment_ratio_cache = ratios[mid]
+            else:
+                _median_assessment_ratio_cache = (ratios[mid - 1] + ratios[mid]) / 2.0
+        return _median_assessment_ratio_cache
 
 
 def _parcel_valuation_ratio_value(conn: sqlite3.Connection, median_ratio: float) -> str:
@@ -151,12 +195,20 @@ def map_valuation_config(conn: sqlite3.Connection) -> dict[str, Any]:
 
 def _county_map_center_value_change_pct(conn: sqlite3.Connection) -> float:
     """Map color center: dollar-weighted county base growth (ratio − 1), not mean parcel %."""
-    summary = get_summary_stats(conn)
-    base = summary.get("county_base_growth_pct")
-    if base is not None:
-        return float(base)
-    avg = summary.get("avg_value_change_pct")
-    return float(avg) if avg is not None else 0.0
+    global _county_map_center_pct_cache
+    if _county_map_center_pct_cache is not None:
+        return _county_map_center_pct_cache
+    with _map_cache_lock:
+        if _county_map_center_pct_cache is not None:
+            return _county_map_center_pct_cache
+        summary = get_summary_stats(conn)
+        base = summary.get("county_base_growth_pct")
+        if base is not None:
+            _county_map_center_pct_cache = float(base)
+        else:
+            avg = summary.get("avg_value_change_pct")
+            _county_map_center_pct_cache = float(avg) if avg is not None else 0.0
+        return _county_map_center_pct_cache
 
 
 def _limit_for_zoom(zoom: float) -> int:
@@ -249,79 +301,89 @@ def map_hexbins_geojson(
 
     bounds = parcel_bounds(conn)
     county_avg = _county_map_center_value_change_pct(conn)
-    size = max(0.0025, min(0.03, float(hex_size_deg)))
-    min_samples = max(1, min(500, int(min_count)))
+    size, min_samples = _normalize_hexbin_params(hex_size_deg, min_count)
+    cache_key = ("relative", size, min_samples)
+    cached = _hexbin_response_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
-    rows = conn.execute(
-        """
-        SELECT lon, lat, value_change_pct
-        FROM parcels
-        WHERE lon IS NOT NULL
-          AND lat IS NOT NULL
-          AND value_change_pct IS NOT NULL
-        """
-    ).fetchall()
+    with _map_cache_lock:
+        cached = _hexbin_response_cache.get(cache_key)
+        if cached is not None:
+            return cached
 
-    sqrt3 = math.sqrt(3.0)
-    horiz = sqrt3 * size
-    vert = 1.5 * size
+        rows = conn.execute(
+            """
+            SELECT lon, lat, value_change_pct
+            FROM parcels
+            WHERE lon IS NOT NULL
+              AND lat IS NOT NULL
+              AND value_change_pct IS NOT NULL
+            """
+        ).fetchall()
 
-    bins: dict[tuple[int, int], dict[str, float]] = {}
-    for row in rows:
-        lon = float(row["lon"])
-        lat = float(row["lat"])
-        pct = float(row["value_change_pct"])
+        sqrt3 = math.sqrt(3.0)
+        horiz = sqrt3 * size
+        vert = 1.5 * size
 
-        r = int(math.floor((lat - bounds["south"]) / vert))
-        x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
-        q = int(math.floor((lon - bounds["west"] - x_offset) / horiz))
-        key = (q, r)
+        bins: dict[tuple[int, int], dict[str, float]] = {}
+        for row in rows:
+            lon = float(row["lon"])
+            lat = float(row["lat"])
+            pct = float(row["value_change_pct"])
 
-        bucket = bins.setdefault(key, {"sum_rel": 0.0, "count": 0.0})
-        bucket["sum_rel"] += pct - county_avg
-        bucket["count"] += 1.0
+            r = int(math.floor((lat - bounds["south"]) / vert))
+            x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+            q = int(math.floor((lon - bounds["west"] - x_offset) / horiz))
+            key = (q, r)
 
-    features: list[dict[str, Any]] = []
-    for (q, r), bucket in bins.items():
-        count = int(bucket["count"])
-        if count < min_samples:
-            continue
+            bucket = bins.setdefault(key, {"sum_rel": 0.0, "count": 0.0})
+            bucket["sum_rel"] += pct - county_avg
+            bucket["count"] += 1.0
 
-        x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
-        center_lon = bounds["west"] + x_offset + (q + 0.5) * horiz
-        center_lat = bounds["south"] + r * vert + size
-        rel_change = bucket["sum_rel"] / bucket["count"]
+        features: list[dict[str, Any]] = []
+        for (q, r), bucket in bins.items():
+            count = int(bucket["count"])
+            if count < min_samples:
+                continue
 
-        ring: list[list[float]] = []
-        for i in range(6):
-            angle = math.pi / 3.0 * i
-            ring.append([
-                center_lon + size * math.cos(angle),
-                center_lat + size * math.sin(angle),
-            ])
-        ring.append(ring[0])
+            x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+            center_lon = bounds["west"] + x_offset + (q + 0.5) * horiz
+            center_lat = bounds["south"] + r * vert + size
+            rel_change = bucket["sum_rel"] / bucket["count"]
 
-        features.append(
-            {
-                "type": "Feature",
-                "geometry": {"type": "Polygon", "coordinates": [ring]},
-                "properties": {
-                    "count": count,
-                    "rel_change_pp": round(rel_change, 3),
-                },
-            }
-        )
+            ring: list[list[float]] = []
+            for i in range(6):
+                angle = math.pi / 3.0 * i
+                ring.append([
+                    center_lon + size * math.cos(angle),
+                    center_lat + size * math.sin(angle),
+                ])
+            ring.append(ring[0])
 
-    return {
-        "type": "FeatureCollection",
-        "features": features,
-        "meta": {
-            "returned": len(features),
-            "hex_size_deg": size,
-            "min_count": min_samples,
-            "county_avg_value_change_pct": county_avg,
-        },
-    }
+            features.append(
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Polygon", "coordinates": [ring]},
+                    "properties": {
+                        "count": count,
+                        "rel_change_pp": round(rel_change, 3),
+                    },
+                }
+            )
+
+        payload = {
+            "type": "FeatureCollection",
+            "features": features,
+            "meta": {
+                "returned": len(features),
+                "hex_size_deg": size,
+                "min_count": min_samples,
+                "county_avg_value_change_pct": county_avg,
+            },
+        }
+        _hexbin_response_cache[cache_key] = payload
+        return payload
 
 
 def map_valuation_parcels_geojson(
@@ -406,80 +468,90 @@ def map_valuation_hexbins_geojson(
     bounds = parcel_bounds(conn)
     median_ratio = _county_median_assessment_ratio(conn)
     vr_expr = _parcel_valuation_ratio_value(conn, median_ratio)
-    size = max(0.0025, min(0.03, float(hex_size_deg)))
-    min_samples = max(1, min(500, int(min_count)))
+    size, min_samples = _normalize_hexbin_params(hex_size_deg, min_count)
+    cache_key = ("valuation", size, min_samples)
+    cached = _hexbin_response_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
-    rows = conn.execute(
-        f"""
-        SELECT lon, lat, {vr_expr} AS valuation_ratio
-        FROM parcels
-        WHERE lon IS NOT NULL
-          AND lat IS NOT NULL
-          AND current_assessment_total > 0
-          AND new_assessment_total > 0
-        """
-    ).fetchall()
+    with _map_cache_lock:
+        cached = _hexbin_response_cache.get(cache_key)
+        if cached is not None:
+            return cached
 
-    sqrt3 = math.sqrt(3.0)
-    horiz = sqrt3 * size
-    vert = 1.5 * size
+        rows = conn.execute(
+            f"""
+            SELECT lon, lat, {vr_expr} AS valuation_ratio
+            FROM parcels
+            WHERE lon IS NOT NULL
+              AND lat IS NOT NULL
+              AND current_assessment_total > 0
+              AND new_assessment_total > 0
+            """
+        ).fetchall()
 
-    bins: dict[tuple[int, int], dict[str, float]] = {}
-    for row in rows:
-        lon = float(row["lon"])
-        lat = float(row["lat"])
-        vr = float(row["valuation_ratio"])
+        sqrt3 = math.sqrt(3.0)
+        horiz = sqrt3 * size
+        vert = 1.5 * size
 
-        r = int(math.floor((lat - bounds["south"]) / vert))
-        x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
-        q = int(math.floor((lon - bounds["west"] - x_offset) / horiz))
-        key = (q, r)
+        bins: dict[tuple[int, int], dict[str, float]] = {}
+        for row in rows:
+            lon = float(row["lon"])
+            lat = float(row["lat"])
+            vr = float(row["valuation_ratio"])
 
-        bucket = bins.setdefault(key, {"sum_vr": 0.0, "count": 0.0})
-        bucket["sum_vr"] += vr
-        bucket["count"] += 1.0
+            r = int(math.floor((lat - bounds["south"]) / vert))
+            x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+            q = int(math.floor((lon - bounds["west"] - x_offset) / horiz))
+            key = (q, r)
 
-    features: list[dict[str, Any]] = []
-    for (q, r), bucket in bins.items():
-        count = int(bucket["count"])
-        if count < min_samples:
-            continue
+            bucket = bins.setdefault(key, {"sum_vr": 0.0, "count": 0.0})
+            bucket["sum_vr"] += vr
+            bucket["count"] += 1.0
 
-        x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
-        center_lon = bounds["west"] + x_offset + (q + 0.5) * horiz
-        center_lat = bounds["south"] + r * vert + size
-        avg_vr = bucket["sum_vr"] / bucket["count"]
+        features: list[dict[str, Any]] = []
+        for (q, r), bucket in bins.items():
+            count = int(bucket["count"])
+            if count < min_samples:
+                continue
 
-        ring: list[list[float]] = []
-        for i in range(6):
-            angle = math.pi / 3.0 * i
-            ring.append([
-                center_lon + size * math.cos(angle),
-                center_lat + size * math.sin(angle),
-            ])
-        ring.append(ring[0])
+            x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+            center_lon = bounds["west"] + x_offset + (q + 0.5) * horiz
+            center_lat = bounds["south"] + r * vert + size
+            avg_vr = bucket["sum_vr"] / bucket["count"]
 
-        features.append(
-            {
-                "type": "Feature",
-                "geometry": {"type": "Polygon", "coordinates": [ring]},
-                "properties": {
-                    "count": count,
-                    "avg_valuation_ratio": round(avg_vr, 4),
-                },
-            }
-        )
+            ring: list[list[float]] = []
+            for i in range(6):
+                angle = math.pi / 3.0 * i
+                ring.append([
+                    center_lon + size * math.cos(angle),
+                    center_lat + size * math.sin(angle),
+                ])
+            ring.append(ring[0])
 
-    return {
-        "type": "FeatureCollection",
-        "features": features,
-        "meta": {
-            "returned": len(features),
-            "hex_size_deg": size,
-            "min_count": min_samples,
-            "county_median_assessment_ratio": median_ratio,
-        },
-    }
+            features.append(
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Polygon", "coordinates": [ring]},
+                    "properties": {
+                        "count": count,
+                        "avg_valuation_ratio": round(avg_vr, 4),
+                    },
+                }
+            )
+
+        payload = {
+            "type": "FeatureCollection",
+            "features": features,
+            "meta": {
+                "returned": len(features),
+                "hex_size_deg": size,
+                "min_count": min_samples,
+                "county_median_assessment_ratio": median_ratio,
+            },
+        }
+        _hexbin_response_cache[cache_key] = payload
+        return payload
 
 
 def map_valuation_parcel_feature(conn: sqlite3.Connection, parcel_id: str) -> dict[str, Any] | None:
@@ -513,6 +585,219 @@ def map_valuation_parcel_feature(conn: sqlite3.Connection, parcel_id: str) -> di
             "municipality": row["municipality"],
             "current_assessment_total": float(row["current_assessment_total"]),
             "new_assessment_total": float(row["new_assessment_total"]),
+        },
+    }
+
+
+def _has_tax_delta_column(conn: sqlite3.Connection) -> bool:
+    return _has_column(conn, "tax_delta_dollars")
+
+
+def map_tax_config(conn: sqlite3.Connection) -> dict[str, Any]:
+    bounds = parcel_bounds(conn)
+    has_centroids = has_parcel_centroids(conn)
+    has_tax_delta = _has_tax_delta_column(conn)
+    has_pmtiles = PMTILES_PATH.is_file()
+    if not has_tax_delta or not has_centroids:
+        mode = "unavailable"
+    else:
+        mode = "pmtiles" if has_pmtiles else "points"
+    return {
+        "mode": mode,
+        "bounds": bounds,
+        "center": [
+            (bounds["west"] + bounds["east"]) / 2,
+            (bounds["south"] + bounds["north"]) / 2,
+        ],
+        "tax_change_color_stops": TAX_DELTA_COLOR_STOPS,
+        "tax_delta_span_dollars": TAX_DELTA_SPAN_DOLLARS,
+        "pmtiles_url": "/api/map/tiles/parcels.pmtiles" if has_pmtiles else None,
+        "source_layer": "parcels",
+        "parcel_count": _parcel_count(conn),
+    }
+
+
+def map_tax_parcels_geojson(
+    conn: sqlite3.Connection,
+    *,
+    west: float,
+    south: float,
+    east: float,
+    north: float,
+    limit: int | None = None,
+    zoom: float | None = None,
+) -> dict[str, Any]:
+    if not has_parcel_centroids(conn) or not _has_tax_delta_column(conn):
+        return {"type": "FeatureCollection", "features": []}
+
+    if west > east or south > north:
+        return {"type": "FeatureCollection", "features": []}
+
+    z = 12.0 if zoom is None else float(zoom)
+    cap = _limit_for_zoom(z) if limit is None else max(1, min(limit, 25_000))
+    rows = conn.execute(
+        """
+        SELECT parcel_id, lon, lat, tax_delta_dollars, address_display, municipality
+        FROM parcels
+        WHERE lon IS NOT NULL
+          AND lat IS NOT NULL
+          AND tax_delta_dollars IS NOT NULL
+          AND lon BETWEEN ? AND ?
+          AND lat BETWEEN ? AND ?
+        ORDER BY random()
+        LIMIT ?
+        """,
+        (west, east, south, north, cap),
+    ).fetchall()
+
+    features: list[dict[str, Any]] = []
+    for row in rows:
+        delta = row["tax_delta_dollars"]
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [float(row["lon"]), float(row["lat"])],
+                },
+                "properties": {
+                    "parcel_id": row["parcel_id"],
+                    "tax_delta_dollars": float(delta) if delta is not None else None,
+                    "address_display": row["address_display"],
+                    "municipality": row["municipality"],
+                },
+            }
+        )
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "meta": {
+            "returned": len(features),
+            "limit": cap,
+            "zoom": z,
+        },
+    }
+
+
+def map_tax_hexbins_geojson(
+    conn: sqlite3.Connection,
+    *,
+    hex_size_deg: float = 0.006,
+    min_count: int = 10,
+) -> dict[str, Any]:
+    if not has_parcel_centroids(conn) or not _has_tax_delta_column(conn):
+        return {"type": "FeatureCollection", "features": [], "meta": {"returned": 0}}
+
+    bounds = parcel_bounds(conn)
+    size, min_samples = _normalize_hexbin_params(hex_size_deg, min_count)
+    cache_key = ("tax", size, min_samples)
+    cached = _hexbin_response_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    with _map_cache_lock:
+        cached = _hexbin_response_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        rows = conn.execute(
+            """
+            SELECT lon, lat, tax_delta_dollars
+            FROM parcels
+            WHERE lon IS NOT NULL
+              AND lat IS NOT NULL
+              AND tax_delta_dollars IS NOT NULL
+            """
+        ).fetchall()
+
+        sqrt3 = math.sqrt(3.0)
+        horiz = sqrt3 * size
+        vert = 1.5 * size
+
+        bins: dict[tuple[int, int], dict[str, float]] = {}
+        for row in rows:
+            lon = float(row["lon"])
+            lat = float(row["lat"])
+            delta = float(row["tax_delta_dollars"])
+
+            r = int(math.floor((lat - bounds["south"]) / vert))
+            x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+            q = int(math.floor((lon - bounds["west"] - x_offset) / horiz))
+            key = (q, r)
+
+            bucket = bins.setdefault(key, {"sum_delta": 0.0, "count": 0.0})
+            bucket["sum_delta"] += delta
+            bucket["count"] += 1.0
+
+        features: list[dict[str, Any]] = []
+        for (q, r), bucket in bins.items():
+            count = int(bucket["count"])
+            if count < min_samples:
+                continue
+
+            x_offset = 0.0 if (r % 2 == 0) else (horiz / 2.0)
+            center_lon = bounds["west"] + x_offset + (q + 0.5) * horiz
+            center_lat = bounds["south"] + r * vert + size
+            avg_delta = bucket["sum_delta"] / bucket["count"]
+
+            ring: list[list[float]] = []
+            for i in range(6):
+                angle = math.pi / 3.0 * i
+                ring.append([
+                    center_lon + size * math.cos(angle),
+                    center_lat + size * math.sin(angle),
+                ])
+            ring.append(ring[0])
+
+            features.append(
+                {
+                    "type": "Feature",
+                    "geometry": {"type": "Polygon", "coordinates": [ring]},
+                    "properties": {
+                        "count": count,
+                        "avg_tax_delta_dollars": round(avg_delta, 2),
+                    },
+                }
+            )
+
+        payload = {
+            "type": "FeatureCollection",
+            "features": features,
+            "meta": {
+                "returned": len(features),
+                "hex_size_deg": size,
+                "min_count": min_samples,
+            },
+        }
+        _hexbin_response_cache[cache_key] = payload
+        return payload
+
+
+def map_tax_parcel_feature(conn: sqlite3.Connection, parcel_id: str) -> dict[str, Any] | None:
+    if not has_parcel_centroids(conn) or not _has_tax_delta_column(conn):
+        return None
+    row = conn.execute(
+        """
+        SELECT parcel_id, lon, lat, tax_delta_dollars, address_display, municipality
+        FROM parcels
+        WHERE parcel_id = ?
+        """,
+        (parcel_id,),
+    ).fetchone()
+    if not row or row["lon"] is None or row["lat"] is None:
+        return None
+    delta = row["tax_delta_dollars"]
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [float(row["lon"]), float(row["lat"])],
+        },
+        "properties": {
+            "parcel_id": row["parcel_id"],
+            "tax_delta_dollars": float(delta) if delta is not None else None,
+            "address_display": row["address_display"],
+            "municipality": row["municipality"],
         },
     }
 

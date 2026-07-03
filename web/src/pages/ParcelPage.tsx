@@ -20,6 +20,9 @@ import {
   formatJurisdictionName,
   formatMoney,
   formatNumber,
+  formatProportionalTaxChangeRange,
+  formatProportionalTaxRange,
+  formatProportionalValueRange,
   formatPct,
 } from '../format'
 import {
@@ -187,8 +190,6 @@ export function ParcelPage() {
     parcel.current_assessment_land
   )
   const buildingNew = assessmentBuilding(parcel.new_assessment_total, parcel.new_assessment_land)
-  const landChange = valueChange(parcel.current_assessment_land, parcel.new_assessment_land)
-  const buildingChange = valueChange(buildingCurrent, buildingNew)
 
   const countyBasePct = countyBaseGrowthFromSummary(summary)
   const meanParcelPct = summary?.avg_value_change_pct
@@ -247,54 +248,48 @@ export function ParcelPage() {
             </div>
             <div className="headline-metric">
               <p className="headline-label">Estimated taxes / year</p>
-              <p className="stat-value">{displayTaxes ? formatMoney(displayTaxes.future.total) : '—'}</p>
+              <p className="stat-value">
+                {displayTaxes
+                  ? formatProportionalTaxRange(
+                      parcel.new_assessment_total,
+                      displayTaxes.future.total
+                    )
+                  : '—'}
+              </p>
             </div>
           </div>
           <dl className="detail-list">
             <div>
               <dt>Land</dt>
               <dd>
-                {formatMoney(parcel.new_assessment_land)}
-                {landChange.dollars != null && (
-                  <>
-                    {' '}
-                    <span className="detail-change">
-                      ({formatSignedMoney(landChange.dollars)}
-                      {landChange.pct != null && `, ${formatPct(landChange.pct)}`})
-                    </span>
-                  </>
+                {formatProportionalValueRange(
+                  parcel.new_assessment_total,
+                  parcel.new_assessment_land
                 )}
               </dd>
             </div>
             <div>
               <dt>Building</dt>
-              <dd>
-                {formatMoney(buildingNew)}
-                {buildingChange.dollars != null && (
-                  <>
-                    {' '}
-                    <span className="detail-change">
-                      ({formatSignedMoney(buildingChange.dollars)}
-                      {buildingChange.pct != null && `, ${formatPct(buildingChange.pct)}`})
-                    </span>
-                  </>
-                )}
-              </dd>
+              <dd>{formatProportionalValueRange(parcel.new_assessment_total, buildingNew)}</dd>
             </div>
             {displayTaxes && (
               <div>
                 <dt>Tax change / year</dt>
                 <dd>
-                  {formatSignedMoney(displayTaxes.delta.total_dollars)}
-                  {displayTaxes.delta.total_percent != null &&
-                    ` (${formatPct(displayTaxes.delta.total_percent)})`}
+                  {formatProportionalTaxChangeRange(
+                    parcel.new_assessment_total,
+                    displayTaxes.current.total,
+                    displayTaxes.future.total
+                  )}
                 </dd>
               </div>
             )}
           </dl>
           <p className="detail-foot">
             Based on recent sales and property characteristics (OpenAvmKit ensemble model). Estimated
-            values are rounded to the nearest $10,000.
+            values and taxes are shown as ranges of about 10% with the estimate near the midpoint
+            (minimum $10,000 band). Valuations round to the nearest $1,000; taxes to the nearest
+            $10.
           </p>
           {taxes && hasCommercialSlider(taxes) && (
             <p className="detail-foot">{commercialAssumptionNote}</p>
@@ -692,24 +687,6 @@ function assessmentBuilding(
 ): number | null {
   if (total == null || land == null) return null
   return total - land
-}
-
-function valueChange(
-  current: number | null | undefined,
-  future: number | null | undefined
-): { dollars: number | null; pct: number | null } {
-  if (current == null || future == null) return { dollars: null, pct: null }
-  const dollars = future - current
-  const pct = current > 0 ? (dollars / current) * 100 : null
-  return { dollars, pct }
-}
-
-function formatSignedMoney(value: number | null | undefined): string {
-  if (value == null) return '—'
-  const formatted = formatMoney(Math.abs(value))
-  if (value > 0) return `+${formatted}`
-  if (value < 0) return `−${formatted}`
-  return formatted
 }
 
 function formatMillsAmount(mills: number | null | undefined): string {

@@ -57,9 +57,10 @@ def _export_centroid_geojson(conn: sqlite3.Connection, out_path: Path) -> int:
             f"(new_assessment_total * 1.0 / current_assessment_total) / {median_ratio}"
         )
 
+    tax_col = ", tax_delta_dollars" if "tax_delta_dollars" in cols else ""
     rows = conn.execute(
         f"""
-        SELECT parcel_id, lon, lat, value_change_pct, {vr_expr} AS valuation_ratio,
+        SELECT parcel_id, lon, lat, value_change_pct, {vr_expr} AS valuation_ratio{tax_col},
                address_display, municipality,
                current_assessment_total, new_assessment_total
         FROM parcels
@@ -76,6 +77,20 @@ def _export_centroid_geojson(conn: sqlite3.Connection, out_path: Path) -> int:
             vr_value = -9999
         else:
             vr_value = float(vr)
+        tax_delta = row["tax_delta_dollars"] if "tax_delta_dollars" in cols else None
+        if tax_delta is None:
+            tax_delta_value = -9999
+        else:
+            tax_delta_value = float(tax_delta)
+        props = {
+            "parcel_id": row["parcel_id"],
+            "value_change_pct": float(pct) if pct is not None else -9999,
+            "valuation_ratio": vr_value,
+            "address_display": row["address_display"] or "",
+            "municipality": row["municipality"] or "",
+        }
+        if "tax_delta_dollars" in cols:
+            props["tax_delta_dollars"] = tax_delta_value
         features.append(
             {
                 "type": "Feature",
@@ -83,13 +98,7 @@ def _export_centroid_geojson(conn: sqlite3.Connection, out_path: Path) -> int:
                     "type": "Point",
                     "coordinates": [float(row["lon"]), float(row["lat"])],
                 },
-                "properties": {
-                    "parcel_id": row["parcel_id"],
-                    "value_change_pct": float(pct) if pct is not None else -9999,
-                    "valuation_ratio": vr_value,
-                    "address_display": row["address_display"] or "",
-                    "municipality": row["municipality"] or "",
-                },
+                "properties": props,
             }
         )
 

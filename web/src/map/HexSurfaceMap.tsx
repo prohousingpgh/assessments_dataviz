@@ -3,17 +3,18 @@ import maplibregl, { type Map as MapLibreMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { BASEMAP_STYLE_SOURCES, basemapRasterLayer } from './basemap'
-import { valuationRatioColorExpression, valueChangeColorExpression } from './colors'
+import { formatTaxDelta, valuationRatioColorExpression, taxDeltaColorExpression, valueChangeColorExpression } from './colors'
 import type {
   MapBounds,
   MapColorStop,
   MapDisplayMode,
   MapHexbinCollection,
+  TaxMapHexbinCollection,
   ValuationMapHexbinCollection,
 } from './types'
 
 type HexSurfaceMapProps = {
-  data: MapHexbinCollection | ValuationMapHexbinCollection
+  data: MapHexbinCollection | ValuationMapHexbinCollection | TaxMapHexbinCollection
   bounds: MapBounds
   center: [number, number]
   stops: MapColorStop[]
@@ -30,9 +31,14 @@ export function HexSurfaceMap({
   countyAveragePct = 0,
 }: HexSurfaceMapProps) {
   const colorProperty =
-    displayMode === 'valuation_ratio' ? 'avg_valuation_ratio' : 'rel_change_pp'
+    displayMode === 'tax_change'
+      ? 'avg_tax_delta_dollars'
+      : displayMode === 'valuation_ratio'
+        ? 'avg_valuation_ratio'
+        : 'rel_change_pp'
   const colorCenter = displayMode === 'valuation_ratio' ? 1 : 0
   const useValuationBins = displayMode === 'valuation_ratio'
+  const useTaxDelta = displayMode === 'tax_change'
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
 
@@ -67,7 +73,9 @@ export function HexSurfaceMap({
             paint: {
               'fill-extrusion-color': (useValuationBins
                 ? valuationRatioColorExpression(colorProperty)
-                : valueChangeColorExpression(colorProperty, stops, colorCenter)) as maplibregl.DataDrivenPropertyValueSpecification<string>,
+                : useTaxDelta
+                  ? taxDeltaColorExpression(colorProperty, stops)
+                  : valueChangeColorExpression(colorProperty, stops, colorCenter)) as maplibregl.DataDrivenPropertyValueSpecification<string>,
               'fill-extrusion-height': [
                 '*',
                 ['coalesce', ['get', 'count'], 0],
@@ -110,8 +118,10 @@ export function HexSurfaceMap({
       const detail =
         displayMode === 'valuation_ratio'
           ? `Avg valuation ratio: ${Number(props.avg_valuation_ratio ?? 0).toFixed(2)} (1.0 = median)`
-          : `Relative change: ${Number(props.rel_change_pp ?? 0) > 0 ? '+' : ''}${Number(props.rel_change_pp ?? 0).toFixed(1)} pp vs county avg<br/>` +
-            `County avg change: ${countyAveragePct.toFixed(1)}%`
+          : displayMode === 'tax_change'
+            ? `Avg tax change: ${formatTaxDelta(Number(props.avg_tax_delta_dollars ?? 0))}`
+            : `Relative change: ${Number(props.rel_change_pp ?? 0) > 0 ? '+' : ''}${Number(props.rel_change_pp ?? 0).toFixed(1)} pp vs county avg<br/>` +
+              `County avg change: ${countyAveragePct.toFixed(1)}%`
       popup
         .setLngLat(event.lngLat)
         .setHTML(`Area sample: ${count.toLocaleString()} parcels<br/>` + detail)

@@ -101,6 +101,55 @@ export const VALUATION_RATIO_BINS = [
   { color: '#d73027', label: '> 1.5', ratio: 1.5 },
 ] as const
 
+export const TAX_DELTA_SPAN_DOLLARS = 2400
+
+export const TAX_DELTA_COLOR_STOPS: MapColorStop[] = [
+  { pct: -2400, color: '#006837' },
+  { pct: -1200, color: '#31a354' },
+  { pct: -400, color: '#a1d99b' },
+  { pct: 0, color: '#ffffbf' },
+  { pct: 400, color: '#fcae91' },
+  { pct: 1200, color: '#de2d26' },
+  { pct: 2400, color: '#a50026' },
+]
+
+export function taxDeltaColorExpression(
+  property = 'tax_delta_dollars',
+  stops: MapColorStop[] = TAX_DELTA_COLOR_STOPS
+): unknown[] {
+  const sorted = [...stops].sort((a, b) => a.pct - b.pct)
+  const expr: unknown[] = [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['get', property], 0],
+  ]
+  for (const stop of sorted) {
+    expr.push(stop.pct, stop.color)
+  }
+  return expr
+}
+
+export function taxDeltaCenterPosition(stops: MapColorStop[] = TAX_DELTA_COLOR_STOPS): number {
+  const sorted = [...stops].sort((a, b) => a.pct - b.pct)
+  const min = sorted[0]?.pct ?? 0
+  const max = sorted[sorted.length - 1]?.pct ?? 0
+  if (max === min) return 50
+  return ((0 - min) / (max - min)) * 100
+}
+
+export function formatTaxDelta(dollars: number | null | undefined): string {
+  if (dollars == null || Number.isNaN(dollars)) return 'n/a'
+  const rounded = Math.round(dollars)
+  const formatted = Math.abs(rounded).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  })
+  if (rounded > 0) return `+${formatted}/yr`
+  if (rounded < 0) return `−${formatted}/yr`
+  return `${formatted}/yr`
+}
+
 export function valuationRatioColorExpression(property = 'valuation_ratio'): unknown[] {
   const expr: unknown[] = ['step', ['coalesce', ['get', property], 1], VALUATION_RATIO_BINS[0].color]
   for (const bin of VALUATION_RATIO_BINS) {
