@@ -84,6 +84,13 @@ def get_summary_stats(conn: sqlite3.Connection) -> dict[str, Any]:
         WHERE current_assessment_total > 0 AND new_assessment_total > 0
         """
     ).fetchone()
+    if row is None:
+        return {
+            "parcel_count": 0,
+            "avg_value_change_pct": None,
+            "current_total": None,
+            "new_total": None,
+        }
     d = dict(row)
     if d.get("current_total"):
         ratio = d["new_total"] / d["current_total"]

@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { searchParcels } from '../api'
 import type { SearchResult } from '../types'
-import { formatMoney, formatPct } from '../format'
+import { formatAssessmentRange, formatMoney, formatPct } from '../format'
 import { Skeleton } from './Skeleton'
 
 type Props = {
@@ -100,7 +100,8 @@ export function SearchBox({ initialQuery = '', autoFocus }: Props) {
                   {r.use_description} · {r.municipality} · {formatPct(r.value_change_pct)} assessed value
                 </span>
                 <span className="search-result-values">
-                  {formatMoney(r.current_assessment_total)} → {formatMoney(r.new_assessment_total)}
+                  {formatMoney(r.current_assessment_total)} →{' '}
+                  {formatAssessmentRange(r.new_assessment_total)}
                 </span>
               </button>
             </li>

@@ -16,9 +16,13 @@ import {
   describeCommercialGrowthAssumption,
 } from '../commercialGrowth'
 import {
+  formatAssessmentRange,
   formatJurisdictionName,
   formatMoney,
   formatNumber,
+  formatProportionalTaxChangeRange,
+  formatProportionalTaxRange,
+  formatProportionalValueRange,
   formatPct,
 } from '../format'
 import {
@@ -186,8 +190,6 @@ export function ParcelPage() {
     parcel.current_assessment_land
   )
   const buildingNew = assessmentBuilding(parcel.new_assessment_total, parcel.new_assessment_land)
-  const landChange = valueChange(parcel.current_assessment_land, parcel.new_assessment_land)
-  const buildingChange = valueChange(buildingCurrent, buildingNew)
 
   const countyBasePct = countyBaseGrowthFromSummary(summary)
   const meanParcelPct = summary?.avg_value_change_pct
@@ -203,6 +205,10 @@ export function ParcelPage() {
           Parcel {parcel.parcel_id} ·{' '}
           <Link to={`/map?parcel=${encodeURIComponent(parcel.parcel_id)}`}>View on map</Link>
         </p>
+        <aside className="callout callout-info parcel-estimates-note">
+          Reassessed values and tax figures below are <strong>modeled estimates</strong> — not
+          official county assessments or tax bills.
+        </aside>
       </PageHeader>
 
       <div className="compare-grid">
@@ -234,67 +240,90 @@ export function ParcelPage() {
         </section>
 
         <section className="card card-accent">
-          <h2>Reassessed value (modeled)</h2>
+          <h2>Reassessed value (estimated)</h2>
           <div className="headline-metrics">
             <div className="headline-metric">
-              <p className="headline-label">Assessed value</p>
-              <p className="stat-value">{formatMoney(parcel.new_assessment_total)}</p>
+              <p className="headline-label">Estimated assessed value</p>
+              <p className="stat-value">{formatAssessmentRange(parcel.new_assessment_total)}</p>
             </div>
             <div className="headline-metric">
               <p className="headline-label">Estimated taxes / year</p>
-              <p className="stat-value">{displayTaxes ? formatMoney(displayTaxes.future.total) : '—'}</p>
+              <p className="stat-value">
+                {displayTaxes
+                  ? formatProportionalTaxRange(
+                      parcel.new_assessment_total,
+                      displayTaxes.future.total
+                    )
+                  : '—'}
+              </p>
             </div>
           </div>
           <dl className="detail-list">
             <div>
               <dt>Land</dt>
               <dd>
-                {formatMoney(parcel.new_assessment_land)}
-                {landChange.dollars != null && (
-                  <>
-                    {' '}
-                    <span className="detail-change">
-                      ({formatSignedMoney(landChange.dollars)}
-                      {landChange.pct != null && `, ${formatPct(landChange.pct)}`})
-                    </span>
-                  </>
+                {formatProportionalValueRange(
+                  parcel.new_assessment_total,
+                  parcel.new_assessment_land
                 )}
               </dd>
             </div>
             <div>
               <dt>Building</dt>
-              <dd>
-                {formatMoney(buildingNew)}
-                {buildingChange.dollars != null && (
-                  <>
-                    {' '}
-                    <span className="detail-change">
-                      ({formatSignedMoney(buildingChange.dollars)}
-                      {buildingChange.pct != null && `, ${formatPct(buildingChange.pct)}`})
-                    </span>
-                  </>
-                )}
-              </dd>
+              <dd>{formatProportionalValueRange(parcel.new_assessment_total, buildingNew)}</dd>
             </div>
             {displayTaxes && (
               <div>
                 <dt>Tax change / year</dt>
                 <dd>
-                  {formatSignedMoney(displayTaxes.delta.total_dollars)}
-                  {displayTaxes.delta.total_percent != null &&
-                    ` (${formatPct(displayTaxes.delta.total_percent)})`}
+                  {formatProportionalTaxChangeRange(
+                    parcel.new_assessment_total,
+                    displayTaxes.current.total,
+                    displayTaxes.future.total
+                  )}
                 </dd>
               </div>
             )}
           </dl>
           <p className="detail-foot">
-            Based on recent sales and property characteristics (OpenAvmKit ensemble model).
+            Based on recent sales and property characteristics (OpenAvmKit ensemble model). Estimated
+            values and taxes are shown as ranges of about 10% with the estimate near the midpoint
+            (minimum $10,000 band). Valuations round to the nearest $1,000; taxes to the nearest
+            $10.
           </p>
           {taxes && hasCommercialSlider(taxes) && (
             <p className="detail-foot">{commercialAssumptionNote}</p>
           )}
         </section>
       </div>
+
+      {taxes && displayTaxes && (
+        <section className="mills-summary card" aria-label="Tax millage rates">
+          <h2 className="mills-summary-title">Millage rates</h2>
+          <p className="detail-foot mills-summary-intro">
+            {taxes.tax_year ? `${taxes.tax_year} nominal millage` : '2026 nominal millage'} for the
+            three main taxing bodies. After reassessment, rates adjust so each jurisdiction collects
+            the same total revenue.
+          </p>
+          <div className="mills-summary-grid">
+            <MillageSummaryItem
+              kind="county"
+              line={displayTaxes.current.county}
+              future={displayTaxes.future.county}
+            />
+            <MillageSummaryItem
+              kind="municipality"
+              line={displayTaxes.current.municipality}
+              future={displayTaxes.future.municipality}
+            />
+            <MillageSummaryItem
+              kind="school"
+              line={displayTaxes.current.school}
+              future={displayTaxes.future.school}
+            />
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <h2>Nearby parcels</h2>
@@ -552,6 +581,30 @@ function HomesteadHelpText({
   )
 }
 
+function MillageSummaryItem({
+  kind,
+  line,
+  future,
+}: {
+  kind: TaxingBodyKind
+  line: PropertyTaxes['current']['county']
+  future: PropertyTaxes['future']['county']
+}) {
+  return (
+    <div className="mills-summary-item">
+      <TaxingBodyLabel kind={kind} name={line.label} />
+      <p className="mills-summary-rate">
+        <span className="mills-summary-label">Today</span>
+        {formatCurrentMillsNote(line)}
+      </p>
+      <p className="mills-summary-rate">
+        <span className="mills-summary-label">After reassessment</span>
+        {formatFutureMillsNote(future)}
+      </p>
+    </div>
+  )
+}
+
 function TaxRow({
   kind,
   line,
@@ -634,24 +687,6 @@ function assessmentBuilding(
 ): number | null {
   if (total == null || land == null) return null
   return total - land
-}
-
-function valueChange(
-  current: number | null | undefined,
-  future: number | null | undefined
-): { dollars: number | null; pct: number | null } {
-  if (current == null || future == null) return { dollars: null, pct: null }
-  const dollars = future - current
-  const pct = current > 0 ? (dollars / current) * 100 : null
-  return { dollars, pct }
-}
-
-function formatSignedMoney(value: number | null | undefined): string {
-  if (value == null) return '—'
-  const formatted = formatMoney(Math.abs(value))
-  if (value > 0) return `+${formatted}`
-  if (value < 0) return `−${formatted}`
-  return formatted
 }
 
 function formatMillsAmount(mills: number | null | undefined): string {

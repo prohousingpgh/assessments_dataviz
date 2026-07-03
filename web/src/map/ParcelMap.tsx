@@ -6,11 +6,13 @@ import maplibregl, {
 } from 'maplibre-gl'
 import { Protocol } from 'pmtiles'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { getMapParcels, getMapValuationParcels } from '../api'
+import { getMapParcels, getMapTaxParcels, getMapValuationParcels } from '../api'
 import { BASEMAP_STYLE_SOURCES, basemapRasterLayer } from './basemap'
 import {
+  formatTaxDelta,
   formatValuationRatio,
   parseMapNumericProp,
+  taxDeltaColorExpression,
   valuationRatioColorExpression,
   valueChangeColorExpression,
 } from './colors'
@@ -18,6 +20,7 @@ import type {
   MapColorStop,
   MapConfig,
   MapDisplayMode,
+  TaxMapConfig,
   ValuationMapConfig,
 } from './types'
 
@@ -30,7 +33,7 @@ export type FocusedParcel = {
 }
 
 type ParcelMapProps = {
-  config: MapConfig | ValuationMapConfig
+  config: MapConfig | ValuationMapConfig | TaxMapConfig
   displayMode?: MapDisplayMode
   highlightParcelId?: string
   onParcelFocus?: (parcel: FocusedParcel) => void
@@ -65,42 +68,52 @@ function registerPmtilesProtocol() {
 }
 
 function resolveDisplayMode(
-  config: MapConfig | ValuationMapConfig,
+  config: MapConfig | ValuationMapConfig | TaxMapConfig,
   displayMode?: MapDisplayMode
 ): MapDisplayMode {
   if (displayMode) return displayMode
-  return 'valuation_ratio_bins' in config ? 'valuation_ratio' : 'value_change'
+  if ('tax_change_color_stops' in config) return 'tax_change'
+  if ('valuation_ratio_bins' in config) return 'valuation_ratio'
+  return 'value_change'
 }
 
 function colorStopsForMode(
-  config: MapConfig | ValuationMapConfig,
+  config: MapConfig | ValuationMapConfig | TaxMapConfig,
   mode: MapDisplayMode
 ): MapColorStop[] {
+  if (mode === 'tax_change') return (config as TaxMapConfig).tax_change_color_stops
   if (mode === 'valuation_ratio') return VALUATION_MAP_STOPS
   return (config as MapConfig).value_change_color_stops
 }
 
-function colorCenterForMode(config: MapConfig | ValuationMapConfig, mode: MapDisplayMode): number {
-  return mode === 'valuation_ratio' ? 1 : (config as MapConfig).county_avg_value_change_pct
+function colorCenterForMode(
+  config: MapConfig | ValuationMapConfig | TaxMapConfig,
+  mode: MapDisplayMode
+): number {
+  if (mode === 'tax_change') return 0
+  if (mode === 'valuation_ratio') return 1
+  return (config as MapConfig).county_avg_value_change_pct
 }
 
-type PmtilesMapConfig = (MapConfig | ValuationMapConfig) & {
+type PmtilesMapConfig = (MapConfig | ValuationMapConfig | TaxMapConfig) & {
   mode: 'pmtiles'
   pmtiles_url: string
   source_layer: string
 }
 
 function isPmtilesConfig(
-  config: MapConfig | ValuationMapConfig
+  config: MapConfig | ValuationMapConfig | TaxMapConfig
 ): config is PmtilesMapConfig {
   return config.mode === 'pmtiles' && Boolean(config.pmtiles_url)
 }
 
 function circlePaint(mode: MapDisplayMode, stops: MapColorStop[], center: number) {
   const colorExpr =
-    mode === 'valuation_ratio'
-      ? valuationRatioColorExpression('valuation_ratio')
-      : valueChangeColorExpression('value_change_pct', stops, center)
+    mode === 'tax_change'
+      ? taxDeltaColorExpression('tax_delta_dollars', stops)
+      : mode === 'valuation_ratio'
+        ? valuationRatioColorExpression('valuation_ratio')
+        : valueChangeColorExpression('value_change_pct', stops, center)
   return {
     'circle-color': colorExpr as DataDrivenPropertyValueSpecification<string>,
     'circle-radius': [
@@ -155,11 +168,17 @@ function addParcelLayers(
     layer.maxzoom = maxzoom
   }
   if (mode === 'valuation_ratio') {
-    // Old tiles without valuation_ratio still render (default color); hide explicit sentinels only.
     layer.filter = [
       'case',
       ['has', 'valuation_ratio'],
       ['>', ['to-number', ['get', 'valuation_ratio']], -9998],
+      true,
+    ]
+  } else if (mode === 'tax_change') {
+    layer.filter = [
+      'case',
+      ['has', 'tax_delta_dollars'],
+      ['>', ['to-number', ['get', 'tax_delta_dollars']], -9998],
       true,
     ]
   }
@@ -212,7 +231,12 @@ function setupLowZoomParcelSampling(
 
     const bounds = padBounds(map.getBounds(), 0.15)
     const zoom = map.getZoom()
-    const fetchParcels = mode === 'valuation_ratio' ? getMapValuationParcels : getMapParcels
+    const fetchParcels =
+      mode === 'tax_change'
+        ? getMapTaxParcels
+        : mode === 'valuation_ratio'
+          ? getMapValuationParcels
+          : getMapParcels
     const params: Parameters<typeof getMapParcels>[0] = {
       west: bounds.west,
       south: bounds.south,
@@ -281,6 +305,9 @@ function bindParcelInteractions(
     if (mode === 'valuation_ratio') {
       const vr = parseMapNumericProp(props.valuation_ratio)
       detailHtml = `Valuation ratio: ${formatValuationRatio(vr)} (1.0 = county median)`
+    } else if (mode === 'tax_change') {
+      const delta = parseMapNumericProp(props.tax_delta_dollars)
+      detailHtml = `Estimated tax change: ${formatTaxDelta(delta)}`
     } else {
       const pct = parseMapNumericProp(props.value_change_pct)
       const relPct = pct == null ? null : pct - colorCenter
@@ -320,6 +347,9 @@ function bindParcelInteractions(
     if (mode === 'valuation_ratio') {
       valuationRatio = parseMapNumericProp(props.valuation_ratio)
       detailHtml = `Valuation ratio: ${formatValuationRatio(valuationRatio)} (1.0 = county median)<br/>`
+    } else if (mode === 'tax_change') {
+      const delta = parseMapNumericProp(props.tax_delta_dollars)
+      detailHtml = `Estimated tax change: ${formatTaxDelta(delta)}<br/>`
     } else {
       const pct = parseMapNumericProp(props.value_change_pct)
       valueChangePct = pct
@@ -389,7 +419,11 @@ function setParcelHighlightFilter(map: MapLibreMap, parcelId: string | undefined
 
 function easeToParcelById(map: MapLibreMap, parcelId: string, mode: MapDisplayMode) {
   const base =
-    mode === 'valuation_ratio' ? '/api/map/valuation/parcels' : '/api/map/parcels'
+    mode === 'tax_change'
+      ? '/api/map/tax/parcels'
+      : mode === 'valuation_ratio'
+        ? '/api/map/valuation/parcels'
+        : '/api/map/parcels'
   const featureUrl = `${base}/${encodeURIComponent(parcelId)}`
   return fetch(featureUrl)
     .then((res) => (res.ok ? res.json() : null))

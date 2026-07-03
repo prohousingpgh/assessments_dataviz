@@ -191,6 +191,128 @@ def _effective_future_mills(
     return nominal_mills * factor
 
 
+# Parcel page commercial-growth slider range (must match web/src/commercialGrowth.ts).
+COMMERCIAL_GROWTH_MIN = 0.2
+COMMERCIAL_GROWTH_MAX = 2.2
+
+
+def _nominal_mills(line: dict[str, Any]) -> float | None:
+    nominal = line.get("mills_nominal")
+    if nominal is not None:
+        return float(nominal)
+    mills = line.get("mills")
+    return float(mills) if mills is not None else None
+
+
+def _interpolate_revenue_neutral_factor(
+    factors_by_growth: dict[str, float], growth: float
+) -> float:
+    cleaned: list[tuple[float, float]] = []
+    for k, v in factors_by_growth.items():
+        try:
+            cleaned.append((float(k), float(v)))
+        except (TypeError, ValueError):
+            continue
+    cleaned.sort(key=lambda p: p[0])
+    if not cleaned:
+        return 1.0
+    if growth <= cleaned[0][0]:
+        return cleaned[0][1]
+    if growth >= cleaned[-1][0]:
+        return cleaned[-1][1]
+    for a, b in zip(cleaned, cleaned[1:]):
+        if a[0] <= growth <= b[0]:
+            span = b[0] - a[0]
+            if span <= 0:
+                return b[1]
+            t = (growth - a[0]) / span
+            return a[1] + (b[1] - a[1]) * t
+    return cleaned[-1][1]
+
+
+def _revenue_neutral_factor_at_growth(base: dict[str, Any], growth: float) -> float:
+    if base.get("method") == "interpolation" and base.get("factors_by_growth"):
+        return _interpolate_revenue_neutral_factor(base["factors_by_growth"], growth)
+    current_sum = float(base.get("current_taxable_sum") or 0)
+    residential_future = float(base.get("residential_future_taxable") or 0)
+    commercial_current = float(base.get("commercial_current_taxable") or 0)
+    future_sum = residential_future + commercial_current * (1.0 + growth)
+    if future_sum <= 0:
+        return 1.0
+    return current_sum / future_sum
+
+
+def _future_total_at_commercial_growth(taxes: dict[str, Any], growth: float) -> float:
+    """Recalculate post-reassessment total tax at a commercial growth rate."""
+    bases = taxes.get("revenue_neutral_bases") or {}
+    current = taxes["current"]
+    future = taxes["future"]
+
+    county_factor = (
+        _revenue_neutral_factor_at_growth(bases["county"], growth) if bases.get("county") else 1.0
+    )
+    muni_factor = (
+        _revenue_neutral_factor_at_growth(bases["municipality"], growth)
+        if bases.get("municipality")
+        else 1.0
+    )
+    school_factor = (
+        _revenue_neutral_factor_at_growth(bases["school"], growth) if bases.get("school") else 1.0
+    )
+
+    county_nominal = _nominal_mills(current["county"])
+    muni_nominal = _nominal_mills(current["municipality"])
+    school_nominal = _nominal_mills(current["school"])
+
+    total = 0.0
+    total += _mill_tax(
+        float(future["county"]["taxable_value"]),
+        _effective_future_mills(county_nominal, county_factor),
+    )
+    total += _mill_tax(
+        float(future["municipality"]["taxable_value"]),
+        _effective_future_mills(muni_nominal, muni_factor),
+    )
+    total += _mill_tax(
+        float(future["school"]["taxable_value"]),
+        _effective_future_mills(school_nominal, school_factor),
+    )
+    local_taxable_future = float(future["municipality"]["taxable_value"])
+    for add in current.get("additional") or []:
+        add_nominal = _nominal_mills(add)
+        total += _mill_tax(
+            local_taxable_future,
+            _effective_future_mills(add_nominal, muni_factor),
+        )
+    return round(total, 2)
+
+
+def map_tax_delta_dollars(taxes: dict[str, Any]) -> float | None:
+    """
+    Annual tax change ($/yr) for map coloring — matches parcel page defaults:
+    commercial growth at countywide average residential growth, homestead from data.
+    """
+    current_total = taxes.get("current", {}).get("total")
+    if current_total is None:
+        return None
+    growth = taxes.get("county_avg_residential_growth_rate")
+    if growth is None:
+        ratio = taxes.get("county_residential_value_ratio")
+        if ratio is not None and ratio > 0:
+            growth = float(ratio) - 1.0
+        else:
+            from api.commercial_scenarios import ESTIMATED_COMMERCIAL_GROWTH
+
+            growth = ESTIMATED_COMMERCIAL_GROWTH
+    growth = max(COMMERCIAL_GROWTH_MIN, min(COMMERCIAL_GROWTH_MAX, float(growth)))
+    bases = taxes.get("revenue_neutral_bases") or {}
+    if not bases.get("county") and not bases.get("municipality") and not bases.get("school"):
+        delta = taxes.get("delta", {}).get("total_dollars")
+        return float(delta) if delta is not None else None
+    future_total = _future_total_at_commercial_growth(taxes, growth)
+    return round(future_total - float(current_total), 2)
+
+
 def _is_city_of_pittsburgh(municipality: str | None, muni_key: str | None) -> bool:
     if muni_key == PITTSBURGH_MUNICIPALITY_KEY:
         return True

@@ -391,6 +391,85 @@ def build_tax_aggregates(
     return pd.DataFrame(rows), json_payload
 
 
+def attach_tax_delta_dollars(conn: sqlite3.Connection) -> None:
+    """Baseline-scenario annual tax change ($/yr) for map coloring."""
+    from functools import lru_cache
+
+    import api.tax as tax_module
+    from api import db as db_module
+    from api.tax import compute_property_taxes, map_tax_delta_dollars, set_tax_db_connection
+    from api.tax_aggregates import build_revenue_neutral_bases, load_tax_aggregates
+
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(parcels)").fetchall()}
+    if "tax_delta_dollars" not in cols:
+        conn.execute("ALTER TABLE parcels ADD COLUMN tax_delta_dollars REAL")
+
+    set_tax_db_connection(conn)
+    summary = db_module.get_summary_stats(conn)
+    tax_module.get_summary_stats = lambda _conn: summary
+    aggregates = load_tax_aggregates(conn)
+
+    @lru_cache(maxsize=8192)
+    def _cached_revenue_neutral_bases(municipality: str, school_district: str) -> dict:
+        return build_revenue_neutral_bases(
+            aggregates,
+            municipality=municipality or None,
+            school_district=school_district or None,
+            db=conn,
+        )
+
+    def _patched_revenue_neutral_bases(
+        _aggregates,
+        *,
+        municipality=None,
+        school_district=None,
+        db=None,
+    ) -> dict:
+        return _cached_revenue_neutral_bases(municipality or "", school_district or "")
+
+    tax_module.build_revenue_neutral_bases = _patched_revenue_neutral_bases
+
+    total = conn.execute("SELECT COUNT(*) FROM parcels").fetchone()[0]
+    batch: list[tuple[float | None, str]] = []
+    last_rowid = 0
+    processed = 0
+    while True:
+        rows = conn.execute(
+            "SELECT rowid, * FROM parcels WHERE rowid > ? ORDER BY rowid LIMIT 5000",
+            (last_rowid,),
+        ).fetchall()
+        if not rows:
+            break
+        for row in rows:
+            last_rowid = row["rowid"]
+            parcel = dict(row)
+            parcel.pop("rowid", None)
+            processed += 1
+            try:
+                taxes = compute_property_taxes(parcel)
+                delta = map_tax_delta_dollars(taxes)
+            except Exception:
+                delta = None
+            batch.append((delta, parcel["parcel_id"]))
+            if len(batch) >= 5000:
+                conn.executemany(
+                    "UPDATE parcels SET tax_delta_dollars = ? WHERE parcel_id = ?",
+                    batch,
+                )
+                conn.commit()
+                batch.clear()
+                print(f"  tax delta: {processed:,} / {total:,}", file=sys.stderr)
+        if batch:
+            conn.executemany(
+                "UPDATE parcels SET tax_delta_dollars = ? WHERE parcel_id = ?",
+                batch,
+            )
+            conn.commit()
+            batch.clear()
+            print(f"  tax delta: {processed:,} / {total:,}", file=sys.stderr)
+    print(f"Computed tax_delta_dollars for {total:,} parcels", file=sys.stderr)
+
+
 def build_db(
     predictions_path: Path,
     assessments_path: Path | None,
@@ -429,6 +508,8 @@ def build_db(
     conn = sqlite3.connect(db_path)
     df.to_sql("parcels", conn, index=False, if_exists="replace")
     tax_agg_df.to_sql("tax_jurisdiction_aggregates", conn, index=False, if_exists="replace")
+
+    attach_tax_delta_dollars(conn)
 
     AGGREGATES_PATH.parent.mkdir(parents=True, exist_ok=True)
     AGGREGATES_PATH.write_text(json.dumps(tax_agg_json, indent=2), encoding="utf-8")

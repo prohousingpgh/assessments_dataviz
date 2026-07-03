@@ -24,9 +24,9 @@ export function Layout() {
             />
             <span className="site-title">
               Home Assessment Explorer{' '}
-              <sup className="site-beta" title="Preview release — features and data may change">
+              <span className="site-beta" title="Preview release — features and data may change">
                 Beta
-              </sup>
+              </span>
             </span>
           </Link>
           <nav className="site-nav" aria-label="Main">
@@ -47,7 +47,8 @@ export function Layout() {
           </nav>
         </div>
         <p className="site-tagline">
-          Reassessment estimates for Allegheny County homeowners
+          Illustrative reassessment estimates for Allegheny County homeowners — not official county
+          figures
         </p>
       </header>
       <main className="main-content">

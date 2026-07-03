@@ -138,4 +138,61 @@ export type ValuationMapHexbinCollection = {
   }
 }
 
-export type MapDisplayMode = 'value_change' | 'valuation_ratio'
+export type MapDisplayMode = 'value_change' | 'valuation_ratio' | 'tax_change'
+
+export type TaxMapConfig = {
+  mode: 'pmtiles' | 'points' | 'unavailable'
+  bounds: MapBounds
+  center: [number, number]
+  tax_change_color_stops: MapColorStop[]
+  tax_delta_span_dollars: number
+  pmtiles_url: string | null
+  source_layer: string
+  parcel_count: number
+}
+
+export type TaxMapParcelFeature = {
+  type: 'Feature'
+  geometry: {
+    type: 'Point'
+    coordinates: [number, number]
+  }
+  properties: {
+    parcel_id: string
+    tax_delta_dollars: number | null
+    address_display?: string
+    municipality?: string
+  }
+}
+
+export type TaxMapParcelCollection = {
+  type: 'FeatureCollection'
+  features: TaxMapParcelFeature[]
+  meta?: {
+    returned: number
+    limit: number
+    zoom: number
+  }
+}
+
+export type TaxMapHexbinFeature = {
+  type: 'Feature'
+  geometry: {
+    type: 'Polygon'
+    coordinates: [Array<[number, number]>]
+  }
+  properties: {
+    count: number
+    avg_tax_delta_dollars: number
+  }
+}
+
+export type TaxMapHexbinCollection = {
+  type: 'FeatureCollection'
+  features: TaxMapHexbinFeature[]
+  meta?: {
+    returned: number
+    hex_size_deg: number
+    min_count: number
+  }
+}

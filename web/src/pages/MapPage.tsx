@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import {
   getMapConfig,
   getMapHexbins,
+  getTaxMapConfig,
+  getTaxMapHexbins,
   getValuationMapConfig,
   getValuationMapHexbins,
 } from '../api'
@@ -12,6 +14,8 @@ import {
   legendGradientCss,
   MAP_COLOR_STOPS,
   relativeChangeCenterPosition,
+  TAX_DELTA_COLOR_STOPS,
+  taxDeltaCenterPosition,
   VALUATION_RATIO_BINS,
   valuationRatioCenterPosition,
   valuationRatioGradientCss,
@@ -23,6 +27,8 @@ import { ParcelMap, type FocusedParcel } from '../map/ParcelMap'
 import type {
   MapConfig,
   MapHexbinCollection,
+  TaxMapConfig,
+  TaxMapHexbinCollection,
   ValuationMapConfig,
   ValuationMapHexbinCollection,
 } from '../map/types'
@@ -39,10 +45,13 @@ export function MapPage() {
   const [valuationHexbins, setValuationHexbins] = useState<ValuationMapHexbinCollection | null>(
     null
   )
+  const [taxConfig, setTaxConfig] = useState<TaxMapConfig | null>(null)
+  const [taxHexbins, setTaxHexbins] = useState<TaxMapHexbinCollection | null>(null)
   const [selectedParcelId, setSelectedParcelId] = useState<string | undefined>(queryParcelId)
   const [error, setError] = useState<string | null>(null)
   const [mapDataError, setMapDataError] = useState<string | null>(null)
   const [valuationMapDataError, setValuationMapDataError] = useState<string | null>(null)
+  const [taxMapDataError, setTaxMapDataError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -55,12 +64,16 @@ export function MapPage() {
       getMapHexbins({ hex_size_deg: 0.006, min_count: 8 }),
       getValuationMapConfig(),
       getValuationMapHexbins({ hex_size_deg: 0.006, min_count: 8 }),
+      getTaxMapConfig(),
+      getTaxMapHexbins({ hex_size_deg: 0.006, min_count: 8 }),
     ])
-      .then(([cfg, hex, vCfg, vHex]) => {
+      .then(([cfg, hex, vCfg, vHex, tCfg, tHex]) => {
         setConfig(cfg)
         setHexbins(hex)
         setValuationConfig(vCfg)
         setValuationHexbins(vHex)
+        setTaxConfig(tCfg)
+        setTaxHexbins(tHex)
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load maps'))
       .finally(() => setLoading(false))
@@ -72,7 +85,9 @@ export function MapPage() {
 
   const medianRatio = valuationConfig?.county_median_assessment_ratio
   const mapsUnavailable =
-    config?.mode === 'unavailable' && valuationConfig?.mode === 'unavailable'
+    config?.mode === 'unavailable' &&
+    valuationConfig?.mode === 'unavailable' &&
+    taxConfig?.mode === 'unavailable'
 
   if (loading) return <MapPageSkeleton />
 
@@ -80,14 +95,15 @@ export function MapPage() {
     <div className="page page--map">
       <PageHeader title="Maps">
         <p className="lead">
-          Explore modeled reassessment patterns countywide. The first map shows change relative to
-          countywide base growth (total assessed value); the second shows each home&apos;s valuation
-          ratio versus the county median (<strong>1.0</strong> = typical).
+          Explore modeled reassessment patterns countywide. Maps show assessment change relative to
+          countywide base growth, valuation ratio versus the county median, and estimated annual
+          property tax change.
         </p>
       </PageHeader>
       {error && <p className="search-error">{error}</p>}
       {mapDataError && <p className="search-error">{mapDataError}</p>}
       {valuationMapDataError && <p className="search-error">{valuationMapDataError}</p>}
+      {taxMapDataError && <p className="search-error">{taxMapDataError}</p>}
 
       {mapsUnavailable && (
         <section className="card panel map-unavailable">
@@ -249,6 +265,78 @@ python scripts/build_map_tiles.py --db data/parcels.db`}
               <p className="page-meta map-help">
                 Hover an area to see sample size and average ratio. Areas shown:{' '}
                 {valuationHexbins.meta?.returned ?? valuationHexbins.features.length}.
+              </p>
+            </section>
+          )}
+        </section>
+      )}
+
+      {taxConfig && taxConfig.mode !== 'unavailable' && (
+        <section className="map-section map-section--tax">
+          <h2>Tax change</h2>
+          <p className="detail-foot">
+            Estimated change in annual property taxes after reassessment, using the same default
+            commercial-growth assumption as the parcel page (countywide average residential growth).
+            Homestead applied where flagged. Yellow is no change; green is lower taxes; red is higher.
+          </p>
+
+          {taxConfig.mode === 'points' && (
+            <p className="page-meta">
+              Showing a random sample of up to 10,000 homes per view when zoomed out. Zoom in for
+              more detail.
+            </p>
+          )}
+
+          <div className="map-shell">
+            <ParcelMap
+              config={taxConfig}
+              displayMode="tax_change"
+              highlightParcelId={selectedParcelId}
+              onParcelFocus={onParcelFocus}
+              onDataError={setTaxMapDataError}
+              ariaLabel="Tax change map"
+            />
+          </div>
+
+          <MapGradientLegend
+            gradientCss={legendGradientCss(
+              taxConfig.tax_change_color_stops ?? TAX_DELTA_COLOR_STOPS
+            )}
+            ariaLabel="Estimated annual tax change from lower to higher"
+            lowLabel="Lower taxes"
+            highLabel="Higher taxes"
+            centerLabel="No change ($0)"
+            minTick="−$2,400/yr"
+            maxTick="+$2,400/yr"
+            centerPositionPct={taxDeltaCenterPosition(
+              taxConfig.tax_change_color_stops ?? TAX_DELTA_COLOR_STOPS
+            )}
+          />
+
+          <p className="page-meta map-help">
+            Colors show modeled change in total annual property tax (all levies). Values beyond
+            ±$2,400/yr use the darkest green or red. Click a home to open full details.
+          </p>
+
+          {taxHexbins && taxHexbins.features.length > 0 && (
+            <section className="card panel hex-surface-panel">
+              <h3>Countywide tax-change visualization</h3>
+              <p className="detail-foot">
+                3D countywide view of average estimated tax change by area. Height shows how many
+                homes are in each area; color shows whether taxes rise or fall.
+              </p>
+              <div className="map-shell hex-surface-shell">
+                <HexSurfaceMap
+                  data={taxHexbins}
+                  bounds={taxConfig.bounds}
+                  center={taxConfig.center}
+                  stops={taxConfig.tax_change_color_stops ?? TAX_DELTA_COLOR_STOPS}
+                  displayMode="tax_change"
+                />
+              </div>
+              <p className="page-meta map-help">
+                Hover an area to see sample size and average tax change. Areas shown:{' '}
+                {taxHexbins.meta?.returned ?? taxHexbins.features.length}.
               </p>
             </section>
           )}

@@ -3,6 +3,10 @@ import type {
   MapHexbinCollection,
   MapParcelCollection,
   MapParcelFeature,
+  TaxMapConfig,
+  TaxMapHexbinCollection,
+  TaxMapParcelCollection,
+  TaxMapParcelFeature,
   ValuationMapConfig,
   ValuationMapHexbinCollection,
   ValuationMapParcelCollection,
@@ -143,6 +147,60 @@ export function getValuationMapHexbins(params?: {
   }
   const suffix = query.toString() ? `?${query}` : ''
   return fetchJson(`/api/map/valuation/hexbins${suffix}`)
+}
+
+export function getTaxMapConfig(): Promise<TaxMapConfig> {
+  return fetchJson('/api/map/tax/config')
+}
+
+export function getTaxMapParcelFeature(parcelId: string): Promise<TaxMapParcelFeature> {
+  return fetchJson(`/api/map/tax/parcels/${encodeURIComponent(parcelId)}`)
+}
+
+export async function getMapTaxParcels(
+  params: {
+    west: number
+    south: number
+    east: number
+    north: number
+    zoom?: number
+    limit?: number
+  },
+  signal?: AbortSignal
+): Promise<TaxMapParcelCollection> {
+  const query = new URLSearchParams({
+    west: String(params.west),
+    south: String(params.south),
+    east: String(params.east),
+    north: String(params.north),
+  })
+  if (params.zoom != null) {
+    query.set('zoom', String(params.zoom))
+  }
+  if (params.limit != null) {
+    query.set('limit', String(params.limit))
+  }
+  const res = await fetch(`/api/map/tax/parcels?${query}`, { signal })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(body || res.statusText)
+  }
+  return res.json() as Promise<TaxMapParcelCollection>
+}
+
+export function getTaxMapHexbins(params?: {
+  hex_size_deg?: number
+  min_count?: number
+}): Promise<TaxMapHexbinCollection> {
+  const query = new URLSearchParams()
+  if (params?.hex_size_deg != null) {
+    query.set('hex_size_deg', String(params.hex_size_deg))
+  }
+  if (params?.min_count != null) {
+    query.set('min_count', String(params.min_count))
+  }
+  const suffix = query.toString() ? `?${query}` : ''
+  return fetchJson(`/api/map/tax/hexbins${suffix}`)
 }
 
 export type HomesteadExemptionEntry = {
