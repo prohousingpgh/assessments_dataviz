@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import maplibregl, { type Map as MapLibreMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { BASEMAP_STYLE_SOURCES, basemapRasterLayer } from './basemap'
 import { formatTaxDelta, valuationRatioColorExpression, taxDeltaColorExpression, valueChangeColorExpression } from './colors'
+import {
+  MAP_RENDERING_UNAVAILABLE_MESSAGE,
+  MapRenderingUnavailableNotice,
+  isMapRenderingSupported,
+} from './renderingSupport'
 import type {
   MapBounds,
   MapColorStop,
@@ -41,6 +46,9 @@ export function HexSurfaceMap({
   const useTaxDelta = displayMode === 'tax_change'
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  const [renderingError, setRenderingError] = useState<string | null>(() =>
+    isMapRenderingSupported() ? null : MAP_RENDERING_UNAVAILABLE_MESSAGE
+  )
 
   const heightScale = useMemo(() => {
     const maxCount = Math.max(
@@ -51,54 +59,62 @@ export function HexSurfaceMap({
   }, [data.features])
 
   useEffect(() => {
-    if (!containerRef.current) return
+    if (renderingError || !containerRef.current) return
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          ...BASEMAP_STYLE_SOURCES,
-          hexbins: {
-            type: 'geojson',
-            data,
-          },
-        },
-        layers: [
-          basemapRasterLayer(),
-          {
-            id: 'hex-fill',
-            type: 'fill-extrusion',
-            source: 'hexbins',
-            paint: {
-              'fill-extrusion-color': (useValuationBins
-                ? valuationRatioColorExpression(colorProperty)
-                : useTaxDelta
-                  ? taxDeltaColorExpression(colorProperty, stops)
-                  : valueChangeColorExpression(colorProperty, stops, colorCenter)) as maplibregl.DataDrivenPropertyValueSpecification<string>,
-              'fill-extrusion-height': [
-                '*',
-                ['coalesce', ['get', 'count'], 0],
-                heightScale,
-              ],
-              'fill-extrusion-base': 0,
-              'fill-extrusion-opacity': 0.88,
+    let map: MapLibreMap
+
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: {
+          version: 8,
+          sources: {
+            ...BASEMAP_STYLE_SOURCES,
+            hexbins: {
+              type: 'geojson',
+              data,
             },
           },
-        ],
-      },
-      center,
-      zoom: 9.3,
-      pitch: 58,
-      bearing: 0,
-      minZoom: 8,
-      maxZoom: 16,
-      dragPan: true,
-      dragRotate: true,
-      pitchWithRotate: true,
-      scrollZoom: true,
-      touchZoomRotate: true,
-    })
+          layers: [
+            basemapRasterLayer(),
+            {
+              id: 'hex-fill',
+              type: 'fill-extrusion',
+              source: 'hexbins',
+              paint: {
+                'fill-extrusion-color': (useValuationBins
+                  ? valuationRatioColorExpression(colorProperty)
+                  : useTaxDelta
+                    ? taxDeltaColorExpression(colorProperty, stops)
+                    : valueChangeColorExpression(colorProperty, stops, colorCenter)) as maplibregl.DataDrivenPropertyValueSpecification<string>,
+                'fill-extrusion-height': [
+                  '*',
+                  ['coalesce', ['get', 'count'], 0],
+                  heightScale,
+                ],
+                'fill-extrusion-base': 0,
+                'fill-extrusion-opacity': 0.88,
+              },
+            },
+          ],
+        },
+        center,
+        zoom: 9.3,
+        pitch: 58,
+        bearing: 0,
+        minZoom: 8,
+        maxZoom: 16,
+        dragPan: true,
+        dragRotate: true,
+        pitchWithRotate: true,
+        scrollZoom: true,
+        touchZoomRotate: true,
+      })
+    } catch (err) {
+      console.error('Failed to initialize countywide surface map', err)
+      setRenderingError(MAP_RENDERING_UNAVAILABLE_MESSAGE)
+      return
+    }
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
 
@@ -139,7 +155,17 @@ export function HexSurfaceMap({
       map.remove()
       mapRef.current = null
     }
-  }, [bounds, center, colorCenter, colorProperty, countyAveragePct, data, displayMode, heightScale, stops])
+  }, [bounds, center, colorCenter, colorProperty, countyAveragePct, data, displayMode, heightScale, renderingError, stops])
+
+  if (renderingError) {
+    return (
+      <MapRenderingUnavailableNotice
+        compact
+        title="Countywide 3D visualization"
+        message={renderingError}
+      />
+    )
+  }
 
   return (
     <div

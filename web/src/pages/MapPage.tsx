@@ -24,6 +24,7 @@ import {
 import { MapGradientLegend } from '../map/MapGradientLegend'
 import { HexSurfaceMap } from '../map/HexSurfaceMap'
 import { ParcelMap, type FocusedParcel } from '../map/ParcelMap'
+import { MapRenderingUnavailableNotice, isMapRenderingSupported } from '../map/renderingSupport'
 import type {
   MapConfig,
   MapHexbinCollection,
@@ -38,6 +39,7 @@ export function MapPage() {
   usePageTitle('Maps')
   const [searchParams] = useSearchParams()
   const queryParcelId = searchParams.get('parcel') ?? undefined
+  const [mapRenderingSupported] = useState(() => isMapRenderingSupported())
 
   const [config, setConfig] = useState<MapConfig | null>(null)
   const [hexbins, setHexbins] = useState<MapHexbinCollection | null>(null)
@@ -52,13 +54,15 @@ export function MapPage() {
   const [mapDataError, setMapDataError] = useState<string | null>(null)
   const [valuationMapDataError, setValuationMapDataError] = useState<string | null>(null)
   const [taxMapDataError, setTaxMapDataError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(mapRenderingSupported)
 
   useEffect(() => {
     setSelectedParcelId(queryParcelId)
   }, [queryParcelId])
 
   useEffect(() => {
+    if (!mapRenderingSupported) return
+
     Promise.all([
       getMapConfig(),
       getMapHexbins({ hex_size_deg: 0.006, min_count: 8 }),
@@ -77,7 +81,7 @@ export function MapPage() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load maps'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [mapRenderingSupported])
 
   const onParcelFocus = useCallback((parcel: FocusedParcel) => {
     setSelectedParcelId(parcel.parcelId)
@@ -88,6 +92,21 @@ export function MapPage() {
     config?.mode === 'unavailable' &&
     valuationConfig?.mode === 'unavailable' &&
     taxConfig?.mode === 'unavailable'
+
+  if (!mapRenderingSupported) {
+    return (
+      <div className="page page--map">
+        <PageHeader title="Maps">
+          <p className="lead">
+            Explore modeled reassessment patterns countywide. Maps show assessment change relative to
+            countywide base growth, valuation ratio versus the county median, and estimated annual
+            property tax change.
+          </p>
+        </PageHeader>
+        <MapRenderingUnavailableNotice />
+      </div>
+    )
+  }
 
   if (loading) return <MapPageSkeleton />
 

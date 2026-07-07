@@ -1246,6 +1246,36 @@ a {
   min-height: 360px;
 }
 
+.map-rendering-unavailable {
+  margin: 1rem 0 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(26, 31, 38, 0.06);
+}
+
+.map-rendering-unavailable h2,
+.map-rendering-unavailable h3 {
+  margin: 0 0 0.5rem;
+}
+
+.map-rendering-unavailable p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.map-shell > .map-rendering-unavailable {
+  display: flex;
+  min-height: 360px;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .map-legend {
   display: flex;
   flex-wrap: wrap;

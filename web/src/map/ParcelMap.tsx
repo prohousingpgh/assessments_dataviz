@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import maplibregl, {
   type DataDrivenPropertyValueSpecification,
   type MapLayerMouseEvent,
@@ -23,6 +23,11 @@ import type {
   TaxMapConfig,
   ValuationMapConfig,
 } from './types'
+import {
+  MAP_RENDERING_UNAVAILABLE_MESSAGE,
+  MapRenderingUnavailableNotice,
+  isMapRenderingSupported,
+} from './renderingSupport'
 
 export type FocusedParcel = {
   parcelId: string
@@ -456,6 +461,9 @@ export function ParcelMap({
   const loadTimerRef = useRef<number | null>(null)
   const loadGenerationRef = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
+  const [renderingError, setRenderingError] = useState<string | null>(() =>
+    isMapRenderingSupported() ? null : MAP_RENDERING_UNAVAILABLE_MESSAGE
+  )
 
   const mode = resolveDisplayMode(config, displayMode)
   const stops = useMemo(() => colorStopsForMode(config, mode), [config, mode])
@@ -463,26 +471,34 @@ export function ParcelMap({
   const usePmtiles = isPmtilesConfig(config)
 
   useEffect(() => {
-    if (!containerRef.current || config.mode === 'unavailable') return
+    if (renderingError || !containerRef.current || config.mode === 'unavailable') return
 
-    registerPmtilesProtocol()
+    let map: MapLibreMap
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: {
-        version: 8,
-        sources: BASEMAP_STYLE_SOURCES,
-        layers: [basemapRasterLayer()],
-      },
-      center: initialCenter ?? config.center,
-      zoom: initialZoom ?? 10,
-      maxBounds:
-        maxBoundsOverride ??
-        [
-          [config.bounds.west - 0.05, config.bounds.south - 0.05],
-          [config.bounds.east + 0.05, config.bounds.north + 0.05],
-        ],
-    })
+    try {
+      registerPmtilesProtocol()
+
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: {
+          version: 8,
+          sources: BASEMAP_STYLE_SOURCES,
+          layers: [basemapRasterLayer()],
+        },
+        center: initialCenter ?? config.center,
+        zoom: initialZoom ?? 10,
+        maxBounds:
+          maxBoundsOverride ??
+          [
+            [config.bounds.west - 0.05, config.bounds.south - 0.05],
+            [config.bounds.east + 0.05, config.bounds.north + 0.05],
+          ],
+      })
+    } catch (err) {
+      console.error('Failed to initialize parcel map', err)
+      setRenderingError(MAP_RENDERING_UNAVAILABLE_MESSAGE)
+      return
+    }
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right')
     mapRef.current = map
@@ -567,6 +583,7 @@ export function ParcelMap({
     maxBoundsOverride,
     onDataError,
     onParcelFocus,
+    renderingError,
   ])
 
   useEffect(() => {
@@ -579,6 +596,10 @@ export function ParcelMap({
       map.once('load', apply)
     }
   }, [highlightParcelId, mode])
+
+  if (renderingError) {
+    return <MapRenderingUnavailableNotice compact title={ariaLabel} message={renderingError} />
+  }
 
   return <div className="parcel-map" ref={containerRef} aria-label={ariaLabel} />
 }
