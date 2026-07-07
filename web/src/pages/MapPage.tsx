@@ -24,7 +24,8 @@ import {
 import { MapGradientLegend } from '../map/MapGradientLegend'
 import { HexSurfaceMap } from '../map/HexSurfaceMap'
 import { ParcelMap, type FocusedParcel } from '../map/ParcelMap'
-import { MapRenderingUnavailableNotice, isMapRenderingSupported } from '../map/renderingSupport'
+import { MapRenderingUnavailableNotice } from '../map/MapRenderingUnavailableNotice'
+import { isMapRenderingSupported } from '../map/renderingSupport'
 import type {
   MapConfig,
   MapHexbinCollection,
@@ -49,16 +50,15 @@ export function MapPage() {
   )
   const [taxConfig, setTaxConfig] = useState<TaxMapConfig | null>(null)
   const [taxHexbins, setTaxHexbins] = useState<TaxMapHexbinCollection | null>(null)
-  const [selectedParcelId, setSelectedParcelId] = useState<string | undefined>(queryParcelId)
+  const [parcelSelection, setParcelSelection] = useState(() => ({
+    queryParcelId,
+    selectedParcelId: queryParcelId,
+  }))
   const [error, setError] = useState<string | null>(null)
   const [mapDataError, setMapDataError] = useState<string | null>(null)
   const [valuationMapDataError, setValuationMapDataError] = useState<string | null>(null)
   const [taxMapDataError, setTaxMapDataError] = useState<string | null>(null)
   const [loading, setLoading] = useState(mapRenderingSupported)
-
-  useEffect(() => {
-    setSelectedParcelId(queryParcelId)
-  }, [queryParcelId])
 
   useEffect(() => {
     if (!mapRenderingSupported) return
@@ -83,9 +83,17 @@ export function MapPage() {
       .finally(() => setLoading(false))
   }, [mapRenderingSupported])
 
-  const onParcelFocus = useCallback((parcel: FocusedParcel) => {
-    setSelectedParcelId(parcel.parcelId)
-  }, [])
+  const selectedParcelId =
+    parcelSelection.queryParcelId === queryParcelId
+      ? parcelSelection.selectedParcelId
+      : queryParcelId
+
+  const onParcelFocus = useCallback(
+    (parcel: FocusedParcel) => {
+      setParcelSelection({ queryParcelId, selectedParcelId: parcel.parcelId })
+    },
+    [queryParcelId]
+  )
 
   const medianRatio = valuationConfig?.county_median_assessment_ratio
   const mapsUnavailable =

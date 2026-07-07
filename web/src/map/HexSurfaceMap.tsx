@@ -4,11 +4,8 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 
 import { BASEMAP_STYLE_SOURCES, basemapRasterLayer } from './basemap'
 import { formatTaxDelta, valuationRatioColorExpression, taxDeltaColorExpression, valueChangeColorExpression } from './colors'
-import {
-  MAP_RENDERING_UNAVAILABLE_MESSAGE,
-  MapRenderingUnavailableNotice,
-  isMapRenderingSupported,
-} from './renderingSupport'
+import { MapRenderingUnavailableNotice } from './MapRenderingUnavailableNotice'
+import { MAP_RENDERING_UNAVAILABLE_MESSAGE, isMapRenderingSupported } from './renderingSupport'
 import type {
   MapBounds,
   MapColorStop,
@@ -112,7 +109,7 @@ export function HexSurfaceMap({
       })
     } catch (err) {
       console.error('Failed to initialize countywide surface map', err)
-      setRenderingError(MAP_RENDERING_UNAVAILABLE_MESSAGE)
+      window.setTimeout(() => setRenderingError(MAP_RENDERING_UNAVAILABLE_MESSAGE), 0)
       return
     }
 
@@ -155,7 +152,20 @@ export function HexSurfaceMap({
       map.remove()
       mapRef.current = null
     }
-  }, [bounds, center, colorCenter, colorProperty, countyAveragePct, data, displayMode, heightScale, renderingError, stops])
+  }, [
+    bounds,
+    center,
+    colorCenter,
+    colorProperty,
+    countyAveragePct,
+    data,
+    displayMode,
+    heightScale,
+    renderingError,
+    stops,
+    useTaxDelta,
+    useValuationBins,
+  ])
 
   if (renderingError) {
     return (

@@ -1,18 +1,4 @@
-import maplibregl from 'maplibre-gl'
-
-export const MAP_RENDERING_UNAVAILABLE_MESSAGE =
-  'Interactive maps require browser graphics acceleration with WebGL support. Turn on graphics acceleration or WebGL in your browser settings, then reload this page.'
-
-export function isMapRenderingSupported() {
-  if (typeof window === 'undefined') return true
-
-  try {
-    return maplibregl.supported()
-  } catch (err) {
-    console.error('Failed to check browser map rendering support', err)
-    return false
-  }
-}
+import { MAP_RENDERING_UNAVAILABLE_MESSAGE } from './renderingSupport'
 
 type MapRenderingUnavailableNoticeProps = {
   title?: string

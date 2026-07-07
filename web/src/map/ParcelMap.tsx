@@ -23,11 +23,8 @@ import type {
   TaxMapConfig,
   ValuationMapConfig,
 } from './types'
-import {
-  MAP_RENDERING_UNAVAILABLE_MESSAGE,
-  MapRenderingUnavailableNotice,
-  isMapRenderingSupported,
-} from './renderingSupport'
+import { MapRenderingUnavailableNotice } from './MapRenderingUnavailableNotice'
+import { MAP_RENDERING_UNAVAILABLE_MESSAGE, isMapRenderingSupported } from './renderingSupport'
 
 export type FocusedParcel = {
   parcelId: string
@@ -306,7 +303,7 @@ function bindParcelInteractions(
     const feature = event.features?.[0]
     if (!feature) return
     const props = feature.properties as Record<string, string | number | null>
-    let detailHtml = ''
+    let detailHtml: string
     if (mode === 'valuation_ratio') {
       const vr = parseMapNumericProp(props.valuation_ratio)
       detailHtml = `Valuation ratio: ${formatValuationRatio(vr)} (1.0 = county median)`
@@ -345,7 +342,7 @@ function bindParcelInteractions(
 
     hoverPopup.remove()
 
-    let detailHtml = ''
+    let detailHtml: string
     let valueChangePct: number | null = null
     let valuationRatio: number | null = null
 
@@ -496,7 +493,7 @@ export function ParcelMap({
       })
     } catch (err) {
       console.error('Failed to initialize parcel map', err)
-      setRenderingError(MAP_RENDERING_UNAVAILABLE_MESSAGE)
+      window.setTimeout(() => setRenderingError(MAP_RENDERING_UNAVAILABLE_MESSAGE), 0)
       return
     }
 
