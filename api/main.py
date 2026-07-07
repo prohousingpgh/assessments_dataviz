@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 
+from api.assessment_flags import enrich_parcel_assessment_flags
 from api.config import CORS_ORIGINS
 from api.db import get_connection, get_parcel, get_summary_stats, load_manifest, search_parcels
 from api.static_files import install_static_files
@@ -56,6 +57,8 @@ def health() -> dict[str, str]:
 @app.get("/api/search")
 def search(request: Request, q: str = Query(..., min_length=2)) -> dict[str, Any]:
     results = search_parcels(request.state.db, q)
+    for row in results:
+        row["has_assessment_quality_warning"] = bool(row.pop("has_assessment_quality_warning", 0))
     return {"query": q, "results": results}
 
 
@@ -64,6 +67,7 @@ def parcel_detail(request: Request, parcel_id: str) -> dict[str, Any]:
     row = get_parcel(request.state.db, parcel_id)
     if not row:
         raise HTTPException(status_code=404, detail="Parcel not found")
+    enrich_parcel_assessment_flags(row)
     summary = get_summary_stats(request.state.db)
     taxes = compute_property_taxes(row)
     return {"parcel": row, "county_summary": summary, "taxes": taxes}

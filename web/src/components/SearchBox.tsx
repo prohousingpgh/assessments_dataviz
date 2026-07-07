@@ -98,6 +98,9 @@ export function SearchBox({ initialQuery = '', autoFocus }: Props) {
                 <span className="search-result-address">{r.address_display}</span>
                 <span className="search-result-meta">
                   {r.use_description} · {r.municipality} · {formatPct(r.value_change_pct)} assessed value
+                  {r.has_assessment_quality_warning && (
+                    <span className="search-result-flag"> · Possible data issue</span>
+                  )}
                 </span>
                 <span className="search-result-values">
                   {formatMoney(r.current_assessment_total)} →{' '}

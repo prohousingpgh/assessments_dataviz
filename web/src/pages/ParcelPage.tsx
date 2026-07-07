@@ -211,6 +211,12 @@ export function ParcelPage() {
         </aside>
       </PageHeader>
 
+      {parcel.assessment_quality_warning && (
+        <aside className="callout callout-warning parcel-quality-warning" role="status">
+          <strong>Possible data issue.</strong> {parcel.assessment_quality_warning}
+        </aside>
+      )}
+
       <div className="compare-grid">
         <section className="card">
           <h2>Assessed value today</h2>
