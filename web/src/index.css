@@ -675,6 +675,15 @@ a {
   border: 1px solid var(--warning-border);
 }
 
+.parcel-quality-warning {
+  margin-top: 0;
+}
+
+.search-result-flag {
+  color: var(--warning-text, #9a6700);
+  font-weight: 600;
+}
+
 .search-label {
   display: block;
   font-weight: 600;

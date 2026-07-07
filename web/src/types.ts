@@ -7,6 +7,7 @@ export type SearchResult = {
   current_assessment_total: number
   new_assessment_total: number
   value_change_pct: number | null
+  has_assessment_quality_warning?: boolean
 }
 
 export type Parcel = SearchResult & {
@@ -19,6 +20,8 @@ export type Parcel = SearchResult & {
   county_total?: number | null
   local_total?: number | null
   homestead_flag?: string | null
+  /** Set when modeled building value is ~$0 despite recorded living area. */
+  assessment_quality_warning?: string | null
 }
 
 export type CountySummary = {

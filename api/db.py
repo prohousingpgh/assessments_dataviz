@@ -43,7 +43,14 @@ def _run_fts_search(
         """
         SELECT p.parcel_id, p.address_display, p.municipality, p.school_district,
                p.use_description, p.current_assessment_total, p.new_assessment_total,
-               p.value_change_pct
+               p.value_change_pct,
+               CASE
+                 WHEN p.building_area_sqft > 0
+                  AND p.new_assessment_total > 0
+                  AND ABS(p.new_assessment_total - COALESCE(p.new_assessment_land, 0)) < 1
+                 THEN 1
+                 ELSE 0
+               END AS has_assessment_quality_warning
         FROM parcels_fts fts
         JOIN parcels p ON p.parcel_id = fts.parcel_id
         WHERE parcels_fts MATCH ?
