@@ -95,6 +95,11 @@ export function ParcelPage() {
     [commercialGrowthRate, countyAvgResidentialGrowth]
   )
 
+  const reassessmentTaxNote = useMemo(
+    () => describeReassessmentTaxFootnote(parcelResidentialGrowth, countyAvgResidentialGrowth),
+    [parcelResidentialGrowth, countyAvgResidentialGrowth]
+  )
+
   const taxAdjustments = useMemo(() => {
     if (!taxes || !parcel) return null
     return applyParcelTaxAdjustments(
@@ -301,10 +306,7 @@ export function ParcelPage() {
             ~±10% ranges.{' '}
             <Link to="/assumptions">Methodology</Link>
           </p>
-          <p className="detail-foot">
-            After reassessment, millage rates drop so total tax revenue stays about flat — assessed
-            values can rise while your tax changes little.
-          </p>
+          <p className="detail-foot">{reassessmentTaxNote}</p>
         </section>
       </div>
 
@@ -690,6 +692,34 @@ function formatFutureMillsNote(line: TaxLine): string {
   const mills = line.mills
   if (mills == null) return 'After reassessment: unavailable'
   return `After reassessment: ${formatMillsAmount(mills)} mills`
+}
+
+function describeReassessmentTaxFootnote(
+  parcelGrowth: number | undefined,
+  countyGrowth: number | undefined
+): string {
+  const base =
+    'After reassessment, millage rates are reset so total tax revenue stays flat, as required by Pennsylvania anti-windfall provisions. The median taxpayer would see no change in their taxes.'
+
+  if (
+    parcelGrowth == null ||
+    countyGrowth == null ||
+    !Number.isFinite(parcelGrowth) ||
+    !Number.isFinite(countyGrowth)
+  ) {
+    return `${base} Your taxes may still change if your home's value shifts more or less than the county average.`
+  }
+
+  const diff = parcelGrowth - countyGrowth
+  if (Math.abs(diff) < 0.03) {
+    return `${base} Your taxes may stay about the same because we estimate your home's value changed at about the county average.`
+  }
+
+  const taxDirection = diff > 0 ? 'go up' : 'go down'
+  const pace = diff > 0 ? 'faster' : 'slower'
+  const valueVerb = parcelGrowth >= 0 ? 'increased' : 'decreased'
+
+  return `${base} Your taxes may ${taxDirection} because we estimate your home's value ${valueVerb} at a rate ${pace} than the county average.`
 }
 
 function assessmentBuilding(
