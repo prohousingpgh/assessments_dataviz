@@ -297,6 +297,17 @@ export function ParcelPage() {
             (minimum $10,000 band). Valuations round to the nearest $1,000; taxes to the nearest
             $10.
           </p>
+          <p className="detail-foot">
+            Allegheny County currently uses a <strong>Common Level Ratio</strong> (CLR) system:
+            assessed values are tied to a <strong>2012</strong> base year, not current market
+            value. The 2026 CLR is <strong>50.14</strong>, so the average home is assessed at
+            roughly half of what it would sell for today. These modeled reassessment estimates do not
+            use the CLR — they aim to reflect current market value, so many homeowners will see
+            assessed values roughly double. Under Pennsylvania law, total tax revenue stays about
+            the same after a county-wide reassessment, so millage rates come down to offset the
+            higher assessments. That is why large increases in assessed value can appear alongside
+            modest tax increases or decreases.
+          </p>
           {taxes && hasCommercialSlider(taxes) && (
             <p className="detail-foot">{commercialAssumptionNote}</p>
           )}
