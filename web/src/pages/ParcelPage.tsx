@@ -241,6 +241,11 @@ export function ParcelPage() {
             </div>
           </dl>
           <p className="detail-foot">
+            Tied to the <strong>2012</strong> base year via the county&apos;s{' '}
+            <strong>Common Level Ratio</strong> (2026 CLR: <strong>50.14</strong>) — often well below
+            today&apos;s market value.
+          </p>
+          <p className="detail-foot">
             {formatNumber(parcel.building_area_sqft)} sq ft living · {formatNumber(parcel.land_area_sqft)} sq ft lot
           </p>
         </section>
@@ -292,14 +297,14 @@ export function ParcelPage() {
             )}
           </dl>
           <p className="detail-foot">
-            Based on recent sales and property characteristics (OpenAvmKit ensemble model). Estimated
-            values and taxes are shown as ranges of about 10% with the estimate near the midpoint
-            (minimum $10,000 band). Valuations round to the nearest $1,000; taxes to the nearest
-            $10.
+            Modeled at <strong>current market value</strong>, not the CLR. Values and taxes are
+            ~±10% ranges.{' '}
+            <Link to="/assumptions">Methodology</Link>
           </p>
-          {taxes && hasCommercialSlider(taxes) && (
-            <p className="detail-foot">{commercialAssumptionNote}</p>
-          )}
+          <p className="detail-foot">
+            After reassessment, millage rates drop so total tax revenue stays about flat — assessed
+            values can rise while your tax changes little.
+          </p>
         </section>
       </div>
 
