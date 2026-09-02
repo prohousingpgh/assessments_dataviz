@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from api.map_data import (
     clear_map_data_cache,
@@ -24,6 +25,8 @@ from api.tax_aggregates import clear_aggregate_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 LIVE_DB = ROOT / "data" / "parcels.db"
+# CI checkouts do not include data/tax_aggregates.json (gitignored).
+_MISSING_AGGREGATES = Path("/nonexistent/tax_aggregates.json")
 
 
 def _memory_conn(*column_sql: str) -> sqlite3.Connection:
@@ -78,6 +81,11 @@ class TaxMapComputeTests(unittest.TestCase):
         clear_aggregate_cache()
 
     def test_on_the_fly_parcel_sample_returns_deltas(self) -> None:
+        with patch("api.tax_aggregates.AGGREGATES_PATH", _MISSING_AGGREGATES):
+            clear_aggregate_cache()
+            self._on_the_fly_parcel_sample_returns_deltas()
+
+    def _on_the_fly_parcel_sample_returns_deltas(self) -> None:
         conn = _memory_conn(
             "parcel_id TEXT",
             "lon REAL",
@@ -112,6 +120,11 @@ class TaxMapComputeTests(unittest.TestCase):
         self.assertEqual(hexbins["features"], [])
 
     def test_compute_matches_parcel_page_helper(self) -> None:
+        with patch("api.tax_aggregates.AGGREGATES_PATH", _MISSING_AGGREGATES):
+            clear_aggregate_cache()
+            self._compute_matches_parcel_page_helper()
+
+    def _compute_matches_parcel_page_helper(self) -> None:
         conn = _memory_conn(
             "parcel_id TEXT",
             "current_assessment_total REAL",

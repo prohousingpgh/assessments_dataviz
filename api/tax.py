@@ -306,9 +306,14 @@ def map_tax_delta_dollars(taxes: dict[str, Any]) -> float | None:
             growth = ESTIMATED_COMMERCIAL_GROWTH
     growth = max(COMMERCIAL_GROWTH_MIN, min(COMMERCIAL_GROWTH_MAX, float(growth)))
     bases = taxes.get("revenue_neutral_bases") or {}
-    if not bases.get("county") and not bases.get("municipality") and not bases.get("school"):
-        delta = taxes.get("delta", {}).get("total_dollars")
-        return float(delta) if delta is not None else None
+    if bases.get("county") or bases.get("municipality") or bases.get("school"):
+        future_total = _future_total_at_commercial_growth(taxes, growth)
+        return round(future_total - float(current_total), 2)
+    delta = taxes.get("delta", {}).get("total_dollars")
+    if delta is not None:
+        return float(delta)
+    # No published aggregates (CI / incomplete bundle): apply nominal mills
+    # to future taxable value, matching compute_property_taxes at factor 1.0.
     future_total = _future_total_at_commercial_growth(taxes, growth)
     return round(future_total - float(current_total), 2)
 
