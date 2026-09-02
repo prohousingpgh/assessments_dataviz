@@ -29,7 +29,13 @@ export function AssumptionsPage() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load'))
   }, [])
 
-  if (error) return <p className="search-error">{error}</p>
+  if (error) {
+    return (
+      <p className="search-error" role="alert">
+        {error}
+      </p>
+    )
+  }
   if (!manifest) return <AssumptionsPageSkeleton />
 
   const ratio = manifest.county_residential_value_ratio ?? manifest.county_summary?.county_value_ratio
@@ -59,8 +65,32 @@ export function AssumptionsPage() {
         </p>
       </PageHeader>
 
+      <nav className="doc-contents" aria-label="On this page">
+        <h2>On this page</h2>
+        <ul>
+          <li>
+            <a href="#what-we-model">What we model</a>
+          </li>
+          <li>
+            <a href="#data-sources">Data sources</a>
+          </li>
+          <li>
+            <a href="#value-estimates">Assessed value estimates</a>
+          </li>
+          <li>
+            <a href="#limitations">Limitations</a>
+          </li>
+          <li>
+            <a href="#tax-estimates">Property tax estimates</a>
+          </li>
+          <li>
+            <a href="#county-context">Countywide context</a>
+          </li>
+        </ul>
+      </nav>
+
       <div className="compare-grid">
-        <section className="card">
+        <section id="what-we-model" className="doc-section">
           <h2>What we model</h2>
           <p>
             Market-value-style assessments for <strong>owner-occupied residential parcels</strong>{' '}
@@ -70,7 +100,7 @@ export function AssumptionsPage() {
           </p>
           <p className="detail-foot">Valuation date: {manifest.valuation_date ?? '2026-01-01'}</p>
         </section>
-        <section className="card">
+        <section className="doc-section">
           <h2>What we do not claim</h2>
           <p>
             This is not the county&apos;s official reassessment, tax bill, or legal advice. Actual
@@ -80,8 +110,7 @@ export function AssumptionsPage() {
         </section>
       </div>
 
-      <section className="card">
-        <h2>Data sources</h2>
+      <section id="data-sources" className="section doc-section">
         <ul className="bullet-list">
           <li>
             <strong>Current assessments</strong> — WPRDC property assessments (parcel IDs, addresses,
@@ -124,7 +153,7 @@ export function AssumptionsPage() {
         )}
       </section>
 
-      <section className="card">
+      <section id="value-estimates" className="section doc-section">
         <h2>How we estimate your home&apos;s assessed value</h2>
         <p>
           For each residential parcel, we compare WPRDC&apos;s current total assessment to a modeled
@@ -142,7 +171,7 @@ export function AssumptionsPage() {
         </ul>
       </section>
 
-      <section className="card methodology-limitations">
+      <section id="limitations" className="section doc-section methodology-limitations">
         <h2>Limitations of this analysis</h2>
         <p>
           Any county-wide reassessment relies heavily on a <strong>mass appraisal</strong> system:
@@ -195,7 +224,7 @@ export function AssumptionsPage() {
         </div>
       </section>
 
-      <section className="card assumptions-card">
+      <section id="tax-estimates" className="section doc-section assumptions-card">
         <h2>How we estimate property taxes</h2>
         <p>
           Taxes are computed separately for <strong>Allegheny County</strong>, your{' '}
@@ -356,7 +385,7 @@ export function AssumptionsPage() {
       </section>
 
       {(ratio != null || baseGrowthPct != null || meanParcelPct != null) && (
-        <section className="card">
+        <section id="county-context" className="section doc-section">
           <h2>Countywide context (this dataset)</h2>
           <p>
             These countywide figures drive post-reassessment homestead scaling and provide context

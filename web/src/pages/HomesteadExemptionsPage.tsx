@@ -1,17 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
+import { SegmentedControl } from '../components/SegmentedControl'
 import { getHomesteadExemptions, type HomesteadExemptionsTable } from '../api'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { formatMoney } from '../format'
 import { HomesteadPageSkeleton } from '../components/skeletons/HomesteadPageSkeleton'
+
+type HomesteadTab = 'municipality' | 'school'
+
+const TAB_OPTIONS = [
+  { value: 'municipality' as const, label: 'Municipalities' },
+  { value: 'school' as const, label: 'School districts' },
+]
 
 export function HomesteadExemptionsPage() {
   usePageTitle('Homestead exclusions')
   const [data, setData] = useState<HomesteadExemptionsTable | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
-  const [tab, setTab] = useState<'municipality' | 'school'>('municipality')
+  const [tab, setTab] = useState<HomesteadTab>('municipality')
+  const panelId = useId()
 
   useEffect(() => {
     getHomesteadExemptions()
@@ -27,7 +36,13 @@ export function HomesteadExemptionsPage() {
     return list.filter((r) => r.name.toLowerCase().includes(q))
   }, [data, filter, tab])
 
-  if (error) return <p className="search-error">{error}</p>
+  if (error) {
+    return (
+      <p className="search-error" role="alert">
+        {error}
+      </p>
+    )
+  }
   if (!data) return <HomesteadPageSkeleton />
 
   const verifiedMuni = data.metadata?.verified_municipality_count ?? 0
@@ -39,6 +54,14 @@ export function HomesteadExemptionsPage() {
     if (normalized.startsWith('proposed')) return 'proposed'
     return 'default'
   }
+
+  const tabOptions = TAB_OPTIONS.map((option) => ({
+    ...option,
+    label:
+      option.value === 'municipality'
+        ? `Municipalities (${data.municipalities.length})`
+        : `School districts (${data.school_districts.length})`,
+  }))
 
   return (
     <div className="page">
@@ -72,83 +95,68 @@ export function HomesteadExemptionsPage() {
       </section>
 
       <section className="card">
-        <div className="homestead-toolbar">
-          <div className="homestead-tabs" role="tablist" aria-label="Jurisdiction type">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'municipality'}
-              className={tab === 'municipality' ? 'homestead-tab active' : 'homestead-tab'}
-              onClick={() => setTab('municipality')}
-            >
-              Municipalities ({data.municipalities.length})
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'school'}
-              className={tab === 'school' ? 'homestead-tab active' : 'homestead-tab'}
-              onClick={() => setTab('school')}
-            >
-              School districts ({data.school_districts.length})
-            </button>
-          </div>
+        <SegmentedControl
+          options={tabOptions}
+          value={tab}
+          onChange={setTab}
+          ariaLabel="Jurisdiction type"
+        />
+        <div id={`${panelId}-${tab}`} role="tabpanel" className="segmented-control-panel">
           <label className="homestead-filter">
             <span className="visually-hidden">Filter by name</span>
             <input
               type="search"
+              className="field"
               placeholder="Filter by name…"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             />
           </label>
-        </div>
-        <p className="page-meta">
-          Verified locally: {verifiedMuni} municipalities, {verifiedSchool} school districts. Rows
-          marked <em>proposed</em> are computed from state property tax relief allocations and
-          homestead counts ({proposedSchool} school districts). Rows marked <em>default</em> use{' '}
-          {formatMoney(data.default_exclusion)} until confirmed.
-        </p>
-        <div className="table-scroll">
-          <table className="tax-table homestead-table">
-            <thead>
-              <tr>
-                <th scope="col">Jurisdiction</th>
-                <th scope="col" className="num">
-                  Exclusion
-                </th>
-                <th scope="col">Status</th>
-                <th scope="col">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.name}>
-                  <td>{row.name}</td>
-                  <td className="num">{formatMoney(row.amount)}</td>
-                  <td>
-                    <span
-                      className={`confidence-pill ${confidenceClass(row.confidence)}`}
-                    >
-                      {row.confidence}
-                    </span>
-                  </td>
-                  <td>
-                    {row.source_url ? (
-                      <a href={row.source_url} target="_blank" rel="noreferrer">
-                        {row.source}
-                      </a>
-                    ) : (
-                      row.source
-                    )}
-                    {row.notes && <p className="table-note">{row.notes}</p>}
-                  </td>
+          <p className="page-meta">
+            Verified locally: {verifiedMuni} municipalities, {verifiedSchool} school districts. Rows
+            marked <em>proposed</em> are computed from state property tax relief allocations and
+            homestead counts ({proposedSchool} school districts). Rows marked <em>default</em> use{' '}
+            {formatMoney(data.default_exclusion)} until confirmed.
+          </p>
+          <div className="table-scroll">
+            <table className="tax-table homestead-table">
+              <thead>
+                <tr>
+                  <th scope="col">Jurisdiction</th>
+                  <th scope="col" className="num">
+                    Exclusion
+                  </th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.name}>
+                    <td>{row.name}</td>
+                    <td className="num">{formatMoney(row.amount)}</td>
+                    <td>
+                      <span className={`confidence-pill ${confidenceClass(row.confidence)}`}>
+                        {row.confidence}
+                      </span>
+                    </td>
+                    <td>
+                      {row.source_url ? (
+                        <a href={row.source_url} target="_blank" rel="noreferrer">
+                          {row.source}
+                        </a>
+                      ) : (
+                        row.source
+                      )}
+                      {row.notes && <p className="table-note">{row.notes}</p>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {rows.length === 0 && <p className="page-meta">No jurisdictions match your filter.</p>}
         </div>
-        {rows.length === 0 && <p className="page-meta">No jurisdictions match your filter.</p>}
       </section>
 
       {data.metadata?.disclaimer && (

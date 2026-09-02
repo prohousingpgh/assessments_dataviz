@@ -9,60 +9,48 @@ export function ParcelPageSkeleton() {
         <Skeleton block height={14} width="min(220px, 50%)" />
       </header>
 
-      <div className="compare-grid">
-        <section className="card skeleton-card">
-          <Skeleton className="skeleton-heading" block height={22} width="55%" />
-          <div className="headline-metrics skeleton-headline-metrics">
-            <div className="headline-metric">
+      <section className="card comparison-card skeleton-card">
+        <div className="comparison-grid">
+          <div className="comparison-column">
+            <Skeleton className="skeleton-heading" block height={22} width="55%" />
+            <div className="skeleton-stack">
               <Skeleton block height={12} width="70%" />
-              <Skeleton block height={28} width="85%" style={{ marginTop: '0.35rem' }} />
-            </div>
-            <div className="headline-metric">
+              <Skeleton block height={28} width="85%" />
               <Skeleton block height={12} width="80%" />
-              <Skeleton block height={28} width="75%" style={{ marginTop: '0.35rem' }} />
+              <Skeleton block height={28} width="75%" />
             </div>
           </div>
-          <div className="skeleton-detail-list">
-            <Skeleton block height={14} width="100%" />
-            <Skeleton block height={14} width="92%" />
-          </div>
-        </section>
-
-        <section className="card card-accent skeleton-card">
-          <Skeleton className="skeleton-heading" block height={22} width="60%" />
-          <div className="headline-metrics skeleton-headline-metrics">
-            <div className="headline-metric">
+          <div className="comparison-column">
+            <Skeleton className="skeleton-heading" block height={22} width="60%" />
+            <div className="skeleton-stack">
               <Skeleton block height={12} width="70%" />
-              <Skeleton block height={28} width="85%" style={{ marginTop: '0.35rem' }} />
-            </div>
-            <div className="headline-metric">
+              <Skeleton block height={28} width="85%" />
               <Skeleton block height={12} width="80%" />
-              <Skeleton block height={28} width="75%" style={{ marginTop: '0.35rem' }} />
+              <Skeleton block height={28} width="75%" />
             </div>
           </div>
-          <div className="skeleton-detail-list">
-            <Skeleton block height={14} width="100%" />
-            <Skeleton block height={14} width="88%" />
-            <Skeleton block height={14} width="65%" />
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <section className="card skeleton-card">
+      <section className="section skeleton-card">
         <Skeleton className="skeleton-heading" block height={22} width="40%" />
-        <Skeleton block height={14} width="95%" style={{ marginTop: '0.75rem' }} />
-        <Skeleton block height={14} width="80%" style={{ marginTop: '0.45rem' }} />
-        <div className="map-shell skeleton-map-shell" style={{ marginTop: '1rem' }} />
+        <div className="skeleton-stack">
+          <Skeleton block height={14} width="95%" />
+          <Skeleton block height={14} width="80%" />
+        </div>
+        <div className="map-shell skeleton-map-shell skeleton-map-shell--spaced" />
       </section>
 
       <section className="card skeleton-card">
         <Skeleton className="skeleton-heading" block height={22} width="55%" />
-        <Skeleton block height={14} width="100%" style={{ marginTop: '0.75rem' }} />
-        <Skeleton block height={14} width="88%" style={{ marginTop: '0.45rem' }} />
-        <div className="skeleton-table" style={{ marginTop: '1.25rem' }}>
+        <div className="skeleton-stack">
+          <Skeleton block height={14} width="100%" />
+          <Skeleton block height={14} width="88%" />
+        </div>
+        <div className="skeleton-table skeleton-table--spaced">
           <Skeleton block height={36} width="100%" />
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} block height={44} width="100%" style={{ marginTop: '0.35rem' }} />
+            <Skeleton key={i} block height={44} width="100%" />
           ))}
         </div>
       </section>

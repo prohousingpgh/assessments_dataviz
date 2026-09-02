@@ -50,7 +50,8 @@ Browser (Vite dev :5173 or Fly :8080)
 | Property tax math | `api/tax.py`, `data/millage_2026.json`, `data/homestead_exclusions.json` |
 | Map / valuation surfaces | `api/map_data.py`, `api/map_routes.py`, `web/src/map/` |
 | Parcel UI | `web/src/pages/ParcelPage.tsx` |
-| Maps page | `web/src/pages/MapPage.tsx` |
+| Maps page | `web/src/pages/MapPage.tsx`, `web/src/map/MapViewSection.tsx` |
+| Shared UI | `web/src/components/SegmentedControl.tsx` |
 | Methodology copy | `web/src/pages/AssumptionsPage.tsx` |
 | Homepage | `web/src/pages/HomePage.tsx` |
 | DB build | `scripts/build_db.py`, `scripts/package_data.py` |

@@ -184,8 +184,12 @@ export function ParcelPage() {
   if (error || !parcel) {
     return (
       <div className="page">
-        <p className="search-error">{error ?? 'Home not found'}</p>
-        <Link to="/">Back to search</Link>
+        <p className="search-error" role="alert">
+          {error ?? 'Home not found'}
+        </p>
+        <Link to="/" className="btn btn-secondary">
+          Back to search
+        </Link>
       </div>
     )
   }
@@ -206,14 +210,19 @@ export function ParcelPage() {
           {formatJurisdictionName(parcel.municipality)} ·{' '}
           {formatJurisdictionName(parcel.school_district)} school district · {parcel.use_description}
         </p>
+        <div className="parcel-meta-row">
+          <p className="page-meta">Parcel {parcel.parcel_id}</p>
+          <Link
+            to={`/map?parcel=${encodeURIComponent(parcel.parcel_id)}`}
+            className="btn btn-secondary"
+          >
+            View on map
+          </Link>
+        </div>
         <p className="page-meta">
-          Parcel {parcel.parcel_id} ·{' '}
-          <Link to={`/map?parcel=${encodeURIComponent(parcel.parcel_id)}`}>View on map</Link>
-        </p>
-        <aside className="callout callout-info parcel-estimates-note">
           Reassessed values and tax figures below are <strong>modeled estimates</strong> — not
           official county assessments or tax bills.
-        </aside>
+        </p>
       </PageHeader>
 
       {parcel.assessment_quality_warning && (
@@ -222,49 +231,55 @@ export function ParcelPage() {
         </aside>
       )}
 
-      <div className="compare-grid">
-        <section className="card">
-          <h2>Assessed value today</h2>
-          <div className="headline-metrics">
-            <div className="headline-metric">
-              <p className="headline-label">Assessed value</p>
-              <p className="stat-value">{formatMoney(parcel.current_assessment_total)}</p>
+      <section className="card comparison-card" aria-label="Assessment comparison">
+        <div className="comparison-grid">
+          <div className="comparison-column">
+            <h3>Assessed value today</h3>
+            <div className="comparison-metric">
+              <p className="comparison-metric-label">Assessed value</p>
+              <p className="comparison-metric-value">{formatMoney(parcel.current_assessment_total)}</p>
             </div>
-            <div className="headline-metric">
-              <p className="headline-label">Estimated taxes / year</p>
-              <p className="stat-value">{displayTaxes ? formatMoney(displayTaxes.current.total) : '—'}</p>
+            <div className="comparison-metric">
+              <p className="comparison-metric-label">Estimated taxes / year</p>
+              <p className="comparison-metric-value">
+                {displayTaxes ? formatMoney(displayTaxes.current.total) : '—'}
+              </p>
             </div>
+            <dl className="detail-list">
+              <div>
+                <dt>Land</dt>
+                <dd>{formatMoney(parcel.current_assessment_land)}</dd>
+              </div>
+              <div>
+                <dt>Building</dt>
+                <dd>{formatMoney(buildingCurrent)}</dd>
+              </div>
+            </dl>
+            <p className="detail-foot">
+              Tied to the <strong>2012</strong> base year via the county&apos;s{' '}
+              <strong>Common Level Ratio</strong> (2026 CLR: <strong>50.14</strong>) — often well below
+              today&apos;s market value.
+            </p>
+            <p className="detail-foot">
+              {formatNumber(parcel.building_area_sqft)} sq ft living ·{' '}
+              {formatNumber(parcel.land_area_sqft)} sq ft lot
+            </p>
           </div>
-          <dl className="detail-list">
-            <div>
-              <dt>Land</dt>
-              <dd>{formatMoney(parcel.current_assessment_land)}</dd>
-            </div>
-            <div>
-              <dt>Building</dt>
-              <dd>{formatMoney(buildingCurrent)}</dd>
-            </div>
-          </dl>
-          <p className="detail-foot">
-            Tied to the <strong>2012</strong> base year via the county&apos;s{' '}
-            <strong>Common Level Ratio</strong> (2026 CLR: <strong>50.14</strong>) — often well below
-            today&apos;s market value.
-          </p>
-          <p className="detail-foot">
-            {formatNumber(parcel.building_area_sqft)} sq ft living · {formatNumber(parcel.land_area_sqft)} sq ft lot
-          </p>
-        </section>
 
-        <section className="card card-accent">
-          <h2>Reassessed value (estimated)</h2>
-          <div className="headline-metrics">
-            <div className="headline-metric">
-              <p className="headline-label">Estimated assessed value</p>
-              <p className="stat-value">{formatAssessmentRange(parcel.new_assessment_total)}</p>
+          <div className="comparison-column">
+            <h3>
+              Reassessed value{' '}
+              <span className="pill pill-estimated">Estimated</span>
+            </h3>
+            <div className="comparison-metric">
+              <p className="comparison-metric-label">Estimated assessed value</p>
+              <p className="comparison-metric-value">
+                {formatAssessmentRange(parcel.new_assessment_total)}
+              </p>
             </div>
-            <div className="headline-metric">
-              <p className="headline-label">Estimated taxes / year</p>
-              <p className="stat-value">
+            <div className="comparison-metric">
+              <p className="comparison-metric-label">Estimated taxes / year</p>
+              <p className="comparison-metric-value">
                 {displayTaxes
                   ? formatProportionalTaxRange(
                       parcel.new_assessment_total,
@@ -273,45 +288,44 @@ export function ParcelPage() {
                   : '—'}
               </p>
             </div>
-          </div>
-          <dl className="detail-list">
-            <div>
-              <dt>Land</dt>
-              <dd>
-                {formatProportionalValueRange(
-                  parcel.new_assessment_total,
-                  parcel.new_assessment_land
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>Building</dt>
-              <dd>{formatProportionalValueRange(parcel.new_assessment_total, buildingNew)}</dd>
-            </div>
-            {displayTaxes && (
+            <dl className="detail-list">
               <div>
-                <dt>Tax change / year</dt>
+                <dt>Land</dt>
                 <dd>
-                  {formatProportionalTaxChangeRange(
+                  {formatProportionalValueRange(
                     parcel.new_assessment_total,
-                    displayTaxes.current.total,
-                    displayTaxes.future.total
+                    parcel.new_assessment_land
                   )}
                 </dd>
               </div>
-            )}
-          </dl>
-          <p className="detail-foot">
-            Modeled at <strong>current market value</strong>, not the CLR. Values and taxes are
-            ~±10% ranges.{' '}
-            <Link to="/assumptions">Methodology</Link>
-          </p>
-          <p className="detail-foot">{reassessmentTaxNote}</p>
-        </section>
-      </div>
+              <div>
+                <dt>Building</dt>
+                <dd>{formatProportionalValueRange(parcel.new_assessment_total, buildingNew)}</dd>
+              </div>
+              {displayTaxes && (
+                <div>
+                  <dt>Tax change / year</dt>
+                  <dd>
+                    {formatProportionalTaxChangeRange(
+                      parcel.new_assessment_total,
+                      displayTaxes.current.total,
+                      displayTaxes.future.total
+                    )}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <p className="detail-foot">
+              Modeled at <strong>current market value</strong>, not the CLR. Values and taxes are
+              ~±10% ranges. <Link to="/assumptions">Methodology</Link>
+            </p>
+            <p className="detail-foot">{reassessmentTaxNote}</p>
+          </div>
+        </div>
+      </section>
 
       {taxes && displayTaxes && (
-        <section className="mills-summary card" aria-label="Tax millage rates">
+        <section className="section mills-summary" aria-label="Tax millage rates">
           <h2 className="mills-summary-title">Millage rates</h2>
           <p className="detail-foot mills-summary-intro">
             {taxes.tax_year ? `${taxes.tax_year} nominal millage` : '2026 nominal millage'} for the
@@ -338,14 +352,18 @@ export function ParcelPage() {
         </section>
       )}
 
-      <section className="card">
+      <section className="section">
         <h2>Nearby parcels</h2>
         <p className="detail-foot">
           Zoomed to roughly a 1.5-block radius around this property. Color shows relative change
           versus countywide base growth (~total assessed value). Click a parcel to focus it, then
           use the popup to open full details.
         </p>
-        {nearbyMapError && <p className="search-error">{nearbyMapError}</p>}
+        {nearbyMapError && (
+          <p className="search-error" role="alert">
+            {nearbyMapError}
+          </p>
+        )}
         {!nearbyMapError &&
           mapConfig &&
           mapConfig.mode !== 'unavailable' &&
@@ -377,34 +395,46 @@ export function ParcelPage() {
             reassessment). Your bill can still change if your home&apos;s value shifts more or less than average.
           </p>
 
-          <label className="tax-option-toggle">
-            <input
-              type="checkbox"
-              checked={homesteadEnabled}
-              onChange={(e) => setHomesteadEnabled(e.target.checked)}
-            />
-            <span>I claim the homestead exemption (owner-occupied)</span>
-          </label>
-          <HomesteadHelpText
-            parcel={parcel}
-            taxes={taxes}
-            countyValueRatio={summary?.county_value_ratio}
-          />
+          <fieldset className="tax-fieldset">
+            <legend>Your situation</legend>
 
-          <label className="tax-option-toggle">
-            <input
-              type="checkbox"
-              checked={incomeBelow125Ami}
-              onChange={(e) => setIncomeBelow125Ami(e.target.checked)}
+            <label className="tax-option-toggle">
+              <input
+                type="checkbox"
+                checked={homesteadEnabled}
+                onChange={(e) => setHomesteadEnabled(e.target.checked)}
+              />
+              <span>I claim the homestead exemption (owner-occupied)</span>
+            </label>
+            <HomesteadHelpText
+              parcel={parcel}
+              taxes={taxes}
+              countyValueRatio={summary?.county_value_ratio}
             />
-            <span>I claim the long-time owner occupant protection (LOOP)</span>
-          </label>
-          <p className="tax-option-help">
-            Under LOOP protections for households earning under 125% AMI who have lived in their home
-            for 10 or more years, county property tax after reassessment would be limited to a{' '}
-            <strong>50% increase</strong> over today&apos;s county tax (municipal and school taxes
-            are unchanged). This is an illustrative calculation only.
-          </p>
+
+            <label className="tax-option-toggle">
+              <input
+                type="checkbox"
+                checked={incomeBelow125Ami}
+                onChange={(e) => setIncomeBelow125Ami(e.target.checked)}
+              />
+              <span>I claim the long-time owner occupant protection (LOOP)</span>
+            </label>
+            <p className="tax-option-help">
+              Under LOOP protections for households earning under 125% AMI who have lived in their home
+              for 10 or more years, county property tax after reassessment would be limited to a{' '}
+              <strong>50% increase</strong> over today&apos;s county tax (municipal and school taxes
+              are unchanged). This is an illustrative calculation only.
+            </p>
+
+            {hasCommercialSlider(taxes) && (
+              <CommercialGrowthSlider
+                range={growthRange}
+                value={commercialGrowthRate}
+                onChange={setCommercialGrowth}
+              />
+            )}
+          </fieldset>
 
           {incomeProtection?.countyCapped && (
             <aside className="callout callout-info">
@@ -412,14 +442,6 @@ export function ParcelPage() {
               (was {formatMoney(incomeProtection.uncappedCountyFuture)} without the income limit).
               Municipality and school district taxes are not capped.
             </aside>
-          )}
-
-          {hasCommercialSlider(taxes) && (
-            <CommercialGrowthSlider
-              range={growthRange}
-              value={commercialGrowthRate}
-              onChange={setCommercialGrowth}
-            />
           )}
 
           {taxes.warnings && taxes.warnings.length > 0 && (
@@ -524,7 +546,7 @@ export function ParcelPage() {
       )}
 
       {countyBasePct != null && (
-        <section className="card">
+        <section className="section">
           <h2>Your home vs the county</h2>
           <p>
             Countywide residential assessed value in this dataset would grow by about{' '}
@@ -547,11 +569,14 @@ export function ParcelPage() {
         </section>
       )}
 
-      <p className="page-actions">
-        <Link to="/">Search another address</Link>
-        {' · '}
-        <Link to="/assumptions">Methodology & assumptions</Link>
-      </p>
+      <div className="page-actions">
+        <Link to="/" className="btn btn-secondary">
+          Search another address
+        </Link>
+        <Link to="/assumptions" className="btn btn-secondary">
+          Methodology & assumptions
+        </Link>
+      </div>
     </div>
   )
 }
