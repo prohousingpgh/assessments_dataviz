@@ -1,17 +1,21 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import logo from '../assets/logo_white.webp'
 
+const POLICY_ARTICLE_URL =
+  'https://www.prohousingpgh.org/blog/policy-property-tax-assessments'
+
 const nav = [
-  { to: '/', label: 'Search' },
-  { to: '/map', label: 'Map' },
-  { to: '/assumptions', label: 'Methodology' },
+  { to: '/', label: 'Search', end: true },
+  { to: '/map', label: 'Map', end: false },
+  { to: '/assumptions', label: 'Methodology', end: true },
 ]
 
 export function Layout() {
-  const { pathname } = useLocation()
-
   return (
     <div className="app-shell">
+      <a href="#main" className="skip-link">
+        Skip to main content
+      </a>
       <header className="site-header">
         <div className="site-header-inner">
           <Link to="/" className="site-brand">
@@ -31,43 +35,69 @@ export function Layout() {
           </Link>
           <nav className="site-nav" aria-label="Main">
             {nav.map((item) => (
-              <Link
+              <NavLink
                 key={item.to}
                 to={item.to}
-                className={
-                  pathname === item.to ||
-                  (item.to !== '/' && pathname.startsWith(item.to))
-                    ? 'nav-link active'
-                    : 'nav-link'
+                end={item.end}
+                className={({ isActive }) =>
+                  isActive ? 'nav-link active' : 'nav-link'
                 }
               >
                 {item.label}
-              </Link>
+              </NavLink>
             ))}
           </nav>
         </div>
-        <p className="site-tagline">
-          Illustrative reassessment estimates for Allegheny County homeowners — not official county
-          figures
-        </p>
       </header>
-      <main className="main-content">
+      <main id="main" className="main-content">
         <Outlet />
       </main>
       <footer className="site-footer">
-        <p className="footer-org">
-          A project of{' '}
-          <a href="https://www.prohousingpgh.org/" target="_blank" rel="noreferrer">
-            Pro-Housing Pittsburgh
-          </a>
-        </p>
-        <p className="footer-disclaimer">
-          Not legal or tax advice. Estimates from the{' '}
-          <a href="https://github.com/prohousingpgh/agc_assessments" target="_blank" rel="noreferrer">
-            agc_assessments
-          </a>{' '}
-          model pipeline.
-        </p>
+        <div className="site-footer-inner">
+          <div className="footer-left">
+            <p className="footer-org">
+              A project of{' '}
+              <a href="https://www.prohousingpgh.org/" target="_blank" rel="noreferrer">
+                Pro-Housing Pittsburgh
+              </a>
+            </p>
+            <p className="footer-disclaimer">
+              Not legal or tax advice. Estimates from the{' '}
+              <a
+                href="https://github.com/prohousingpgh/agc_assessments"
+                target="_blank"
+                rel="noreferrer"
+              >
+                agc_assessments
+              </a>{' '}
+              model pipeline.
+            </p>
+          </div>
+          <div className="footer-right">
+            <ul className="footer-links">
+              <li>
+                <Link to="/assumptions">Methodology</Link>
+              </li>
+              <li>
+                <Link to="/homestead-exemptions">Homestead exclusions</Link>
+              </li>
+              <li>
+                <a href={POLICY_ARTICLE_URL} target="_blank" rel="noreferrer">
+                  Policy brief
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/prohousingpgh/agc_assessments"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  agc_assessments
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
       </footer>
     </div>
   )

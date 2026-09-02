@@ -18,7 +18,8 @@ Homeowner lookup site: search addresses → parcel detail with modeled reassessm
 
 - Tax math: `api/tax.py` + `data/millage_2026.json` (split-rate: Clairton, McKeesport, Clairton school)
 - Parcel UI: `web/src/pages/ParcelPage.tsx`
-- Maps: `web/src/pages/MapPage.tsx`, `web/src/map/`
+- Maps: `web/src/pages/MapPage.tsx`, `web/src/map/MapViewSection.tsx`
+- Shared UI: `web/src/components/SegmentedControl.tsx`
 - Copy/methodology: `AssumptionsPage.tsx`, `HomePage.tsx`
 - DB: `scripts/build_db.py`
 
