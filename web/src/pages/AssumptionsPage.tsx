@@ -61,7 +61,8 @@ export function AssumptionsPage() {
           <a href={manifest.methodology_url} target="_blank" rel="noreferrer">
             prohousingpgh/agc_assessments
           </a>
-          .
+          . Act 50 amounts by municipality and school district are in the{' '}
+          <Link to="/homestead-exemptions">homestead exclusions table</Link>.
         </p>
       </PageHeader>
 
@@ -84,7 +85,13 @@ export function AssumptionsPage() {
             <a href="#tax-estimates">Property tax estimates</a>
           </li>
           <li>
+            <a href="#homestead">Homestead exemption</a>
+          </li>
+          <li>
             <a href="#county-context">Countywide context</a>
+          </li>
+          <li>
+            <Link to="/homestead-exemptions">Homestead exclusions table</Link>
           </li>
         </ul>
       </nav>
@@ -304,13 +311,15 @@ export function AssumptionsPage() {
           </li>
         </ul>
 
-        <h3 className="assumptions-subhead">Homestead exemption</h3>
+        <h3 id="homestead" className="assumptions-subhead">
+          Homestead exemption
+        </h3>
         <p>
           Homestead reduces <strong>taxable</strong> assessed value (not the assessment on your deed).
           Amounts differ by taxing body and by whether we are estimating taxes today or after
           reassessment. See the full{' '}
-          <Link to="/homestead-exemptions">homestead exclusions reference</Link> for every
-          municipality and school district.
+          <Link to="/homestead-exemptions">homestead exclusions table</Link> for every municipality
+          and school district.
         </p>
         <ul className="bullet-list">
           <li>

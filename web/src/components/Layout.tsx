@@ -8,7 +8,6 @@ const nav = [
   { to: '/', label: 'Search', end: true },
   { to: '/map', label: 'Map', end: false },
   { to: '/assumptions', label: 'Methodology', end: true },
-  { to: '/homestead-exemptions', label: 'Homestead', end: true },
 ]
 
 export function Layout() {
