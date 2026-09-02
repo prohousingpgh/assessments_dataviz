@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   getMapConfig,
@@ -9,7 +9,10 @@ import {
   getValuationMapHexbins,
 } from '../api'
 import { PageHeader } from '../components/PageHeader'
-import { SegmentedControl } from '../components/SegmentedControl'
+import {
+  SegmentedControl,
+  SegmentedPanel,
+} from '../components/SegmentedControl'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { MapViewSection, type MapViewId } from '../map/MapViewSection'
 import { type FocusedParcel } from '../map/ParcelMap'
@@ -23,7 +26,7 @@ import type {
   ValuationMapConfig,
   ValuationMapHexbinCollection,
 } from '../map/types'
-import { MapPageSkeleton } from '../components/skeletons/MapPageSkeleton'
+import { MapViewSkeleton } from '../components/skeletons/MapPageSkeleton'
 
 const MAP_VIEW_OPTIONS = [
   { value: 'assessment' as const, label: 'Assessment change' },
@@ -95,6 +98,7 @@ function viewCaption(view: MapViewId, hexCount?: number) {
 
 export function MapPage() {
   usePageTitle('Maps')
+  const mapTabsId = useId()
   const [searchParams, setSearchParams] = useSearchParams()
   const queryParcelId = searchParams.get('parcel') ?? undefined
   const activeView = parseViewParam(searchParams.get('view'))
@@ -193,16 +197,13 @@ export function MapPage() {
     )
   }
 
-  if (activeData.loading && !activeData.config) {
-    return <MapPageSkeleton />
-  }
-
   const valuationConfig =
     viewCache.valuation?.config && 'county_median_assessment_ratio' in viewCache.valuation.config
       ? viewCache.valuation.config
       : null
   const medianRatio = valuationConfig?.county_median_assessment_ratio
   const hexCount = activeData.hexbins?.meta?.returned ?? activeData.hexbins?.features.length
+  const showViewSkeleton = activeData.loading && !activeData.config
 
   return (
     <div className="page page--map">
@@ -214,6 +215,7 @@ export function MapPage() {
       </PageHeader>
 
       <SegmentedControl
+        id={mapTabsId}
         options={MAP_VIEW_OPTIONS}
         value={activeView}
         onChange={setActiveView}
@@ -242,19 +244,32 @@ export function MapPage() {
         </section>
       )}
 
-      {activeData.config && activeData.config.mode !== 'unavailable' && (
-        <MapViewSection
-          viewId={activeView}
-          title={MAP_VIEW_OPTIONS.find((o) => o.value === activeView)?.label ?? 'Map'}
-          description={viewDescription(activeView, medianRatio)}
-          config={activeData.config}
-          hexbins={activeData.hexbins}
-          highlightParcelId={selectedParcelId}
-          onParcelFocus={onParcelFocus}
-          onDataError={setMapDataError}
-          caption={viewCaption(activeView, hexCount)}
-        />
-      )}
+      {MAP_VIEW_OPTIONS.map((option) => {
+        const isActive = option.value === activeView
+        return (
+          <SegmentedPanel
+            key={option.value}
+            id={`${mapTabsId}-panel-${option.value}`}
+            labelledBy={`${mapTabsId}-tab-${option.value}`}
+            hidden={!isActive}
+          >
+            {isActive && showViewSkeleton && <MapViewSkeleton />}
+            {isActive && activeData.config && activeData.config.mode !== 'unavailable' && (
+              <MapViewSection
+                viewId={activeView}
+                title={MAP_VIEW_OPTIONS.find((o) => o.value === activeView)?.label ?? 'Map'}
+                description={viewDescription(activeView, medianRatio)}
+                config={activeData.config}
+                hexbins={activeData.hexbins}
+                highlightParcelId={selectedParcelId}
+                onParcelFocus={onParcelFocus}
+                onDataError={setMapDataError}
+                caption={viewCaption(activeView, hexCount)}
+              />
+            )}
+          </SegmentedPanel>
+        )
+      })}
     </div>
   )
 }

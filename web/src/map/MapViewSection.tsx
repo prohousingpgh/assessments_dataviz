@@ -155,19 +155,16 @@ export function MapViewSection({
       </div>
 
       {surface === 'parcels' || !hasHex ? (
-        <>
-          <div className="map-shell">
-            <ParcelMap
-              config={config}
-              displayMode={displayMode}
-              highlightParcelId={highlightParcelId}
-              onParcelFocus={onParcelFocus}
-              onDataError={onDataError}
-              ariaLabel={ariaLabelForView(viewId)}
-            />
-          </div>
-          <MapGradientLegend {...legend} />
-        </>
+        <div className="map-shell">
+          <ParcelMap
+            config={config}
+            displayMode={displayMode}
+            highlightParcelId={highlightParcelId}
+            onParcelFocus={onParcelFocus}
+            onDataError={onDataError}
+            ariaLabel={ariaLabelForView(viewId)}
+          />
+        </div>
       ) : (
         <div className="map-shell hex-surface-shell">
           <HexSurfaceMap
@@ -185,6 +182,7 @@ export function MapViewSection({
         </div>
       )}
 
+      <MapGradientLegend {...legend} />
       <p className="map-caption">{caption}</p>
     </section>
   )

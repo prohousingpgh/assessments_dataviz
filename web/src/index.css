@@ -361,6 +361,11 @@ textarea:focus-visible,
   color: rgba(255, 255, 255, 0.82);
 }
 
+.site-header a.nav-link:hover,
+.site-header a.nav-link.active {
+  color: #fff;
+}
+
 .main-content {
   flex: 1;
   max-width: var(--max-width);

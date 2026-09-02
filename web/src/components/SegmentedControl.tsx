@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, type KeyboardEvent } from 'react'
+import { useCallback, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
 
 export type SegmentedOption<T extends string> = {
   value: T
@@ -11,6 +11,8 @@ type SegmentedControlProps<T extends string> = {
   onChange: (value: T) => void
   ariaLabel: string
   className?: string
+  /** Stable id prefix shared with matching tabpanel ids (`${id}-panel-${value}`). */
+  id?: string
 }
 
 export function SegmentedControl<T extends string>({
@@ -19,8 +21,10 @@ export function SegmentedControl<T extends string>({
   onChange,
   ariaLabel,
   className,
+  id,
 }: SegmentedControlProps<T>) {
-  const baseId = useId()
+  const generatedId = useId()
+  const baseId = id ?? generatedId
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
 
   const focusTab = useCallback((index: number) => {
@@ -101,7 +105,7 @@ type SegmentedPanelProps = {
   id: string
   labelledBy: string
   hidden?: boolean
-  children: React.ReactNode
+  children: ReactNode
   className?: string
 }
 
