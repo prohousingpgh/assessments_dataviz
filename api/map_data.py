@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from api.db import get_summary_stats
+from api.tax import compute_map_tax_delta, prepare_map_tax_context
 
 ROOT = Path(__file__).resolve().parents[1]
 PMTILES_PATH = ROOT / "data" / "parcels.pmtiles"
@@ -593,15 +594,55 @@ def _has_tax_delta_column(conn: sqlite3.Connection) -> bool:
     return _has_column(conn, "tax_delta_dollars")
 
 
+# Columns needed to recompute map tax deltas when parcels.tax_delta_dollars is absent.
+_TAX_DELTA_SOURCE_COLUMNS = (
+    "parcel_id",
+    "lon",
+    "lat",
+    "address_display",
+    "municipality",
+    "school_district",
+    "current_assessment_total",
+    "new_assessment_total",
+    "county_total",
+    "local_total",
+    "homestead_flag",
+    "current_assessment_land",
+    "new_assessment_land",
+)
+
+
+def _sql_existing_columns(conn: sqlite3.Connection, names: tuple[str, ...]) -> str:
+    cols = _table_columns(conn, "parcels")
+    selected = [name for name in names if name in cols]
+    return ", ".join(selected) if selected else "parcel_id"
+
+
+def _row_to_parcel(row: sqlite3.Row) -> dict[str, Any]:
+    return {key: row[key] for key in row.keys()}
+
+
+def _computed_tax_delta(parcel: dict[str, Any], ctx: Any) -> float | None:
+    try:
+        return compute_map_tax_delta(parcel, ctx)
+    except Exception:
+        return None
+
+
 def map_tax_config(conn: sqlite3.Connection) -> dict[str, Any]:
     bounds = parcel_bounds(conn)
     has_centroids = has_parcel_centroids(conn)
     has_tax_delta = _has_tax_delta_column(conn)
     has_pmtiles = PMTILES_PATH.is_file()
-    if not has_tax_delta or not has_centroids:
+    # Vector tiles only include tax_delta_dollars when the DB column was present
+    # at tile build time. Older data bundles still have centroids — color those
+    # from on-the-fly tax math instead of hiding the whole tax map.
+    if not has_centroids:
         mode = "unavailable"
+    elif has_tax_delta and has_pmtiles:
+        mode = "pmtiles"
     else:
-        mode = "pmtiles" if has_pmtiles else "points"
+        mode = "points"
     return {
         "mode": mode,
         "bounds": bounds,
@@ -611,9 +652,10 @@ def map_tax_config(conn: sqlite3.Connection) -> dict[str, Any]:
         ],
         "tax_change_color_stops": TAX_DELTA_COLOR_STOPS,
         "tax_delta_span_dollars": TAX_DELTA_SPAN_DOLLARS,
-        "pmtiles_url": "/api/map/tiles/parcels.pmtiles" if has_pmtiles else None,
+        "pmtiles_url": "/api/map/tiles/parcels.pmtiles" if has_pmtiles and has_tax_delta else None,
         "source_layer": "parcels",
         "parcel_count": _parcel_count(conn),
+        "tax_delta_precomputed": has_tax_delta,
     }
 
 
@@ -627,7 +669,7 @@ def map_tax_parcels_geojson(
     limit: int | None = None,
     zoom: float | None = None,
 ) -> dict[str, Any]:
-    if not has_parcel_centroids(conn) or not _has_tax_delta_column(conn):
+    if not has_parcel_centroids(conn):
         return {"type": "FeatureCollection", "features": []}
 
     if west > east or south > north:
@@ -635,13 +677,20 @@ def map_tax_parcels_geojson(
 
     z = 12.0 if zoom is None else float(zoom)
     cap = _limit_for_zoom(z) if limit is None else max(1, min(limit, 25_000))
+    has_tax_delta = _has_tax_delta_column(conn)
+    if has_tax_delta:
+        select_sql = "parcel_id, lon, lat, tax_delta_dollars, address_display, municipality"
+        extra_where = "AND tax_delta_dollars IS NOT NULL"
+    else:
+        select_sql = _sql_existing_columns(conn, _TAX_DELTA_SOURCE_COLUMNS)
+        extra_where = ""
     rows = conn.execute(
-        """
-        SELECT parcel_id, lon, lat, tax_delta_dollars, address_display, municipality
+        f"""
+        SELECT {select_sql}
         FROM parcels
         WHERE lon IS NOT NULL
           AND lat IS NOT NULL
-          AND tax_delta_dollars IS NOT NULL
+          {extra_where}
           AND lon BETWEEN ? AND ?
           AND lat BETWEEN ? AND ?
         ORDER BY random()
@@ -650,9 +699,15 @@ def map_tax_parcels_geojson(
         (west, east, south, north, cap),
     ).fetchall()
 
+    ctx = None if has_tax_delta else prepare_map_tax_context(conn)
     features: list[dict[str, Any]] = []
     for row in rows:
-        delta = row["tax_delta_dollars"]
+        if has_tax_delta:
+            delta = row["tax_delta_dollars"]
+        else:
+            delta = _computed_tax_delta(_row_to_parcel(row), ctx)
+        if delta is None:
+            continue
         features.append(
             {
                 "type": "Feature",
@@ -662,7 +717,7 @@ def map_tax_parcels_geojson(
                 },
                 "properties": {
                     "parcel_id": row["parcel_id"],
-                    "tax_delta_dollars": float(delta) if delta is not None else None,
+                    "tax_delta_dollars": float(delta),
                     "address_display": row["address_display"],
                     "municipality": row["municipality"],
                 },
@@ -685,7 +740,7 @@ def map_tax_hexbins_geojson(
     hex_size_deg: float = 0.006,
     min_count: int = 10,
 ) -> dict[str, Any]:
-    if not has_parcel_centroids(conn) or not _has_tax_delta_column(conn):
+    if not has_parcel_centroids(conn):
         return {"type": "FeatureCollection", "features": [], "meta": {"returned": 0}}
 
     bounds = parcel_bounds(conn)
@@ -699,6 +754,15 @@ def map_tax_hexbins_geojson(
         cached = _hexbin_response_cache.get(cache_key)
         if cached is not None:
             return cached
+
+        # Countywide hexbins need a delta for every geocoded parcel. Computing
+        # those on the fly is too slow for the first Maps-tab request, so skip
+        # the 3D surface until tax_delta_dollars is precomputed. The default
+        # point sample still colors from live tax math.
+        if not _has_tax_delta_column(conn):
+            payload = {"type": "FeatureCollection", "features": [], "meta": {"returned": 0}}
+            _hexbin_response_cache[cache_key] = payload
+            return payload
 
         rows = conn.execute(
             """
@@ -774,11 +838,16 @@ def map_tax_hexbins_geojson(
 
 
 def map_tax_parcel_feature(conn: sqlite3.Connection, parcel_id: str) -> dict[str, Any] | None:
-    if not has_parcel_centroids(conn) or not _has_tax_delta_column(conn):
+    if not has_parcel_centroids(conn):
         return None
+    has_tax_delta = _has_tax_delta_column(conn)
+    if has_tax_delta:
+        select_sql = "parcel_id, lon, lat, tax_delta_dollars, address_display, municipality"
+    else:
+        select_sql = _sql_existing_columns(conn, _TAX_DELTA_SOURCE_COLUMNS)
     row = conn.execute(
-        """
-        SELECT parcel_id, lon, lat, tax_delta_dollars, address_display, municipality
+        f"""
+        SELECT {select_sql}
         FROM parcels
         WHERE parcel_id = ?
         """,
@@ -786,7 +855,10 @@ def map_tax_parcel_feature(conn: sqlite3.Connection, parcel_id: str) -> dict[str
     ).fetchone()
     if not row or row["lon"] is None or row["lat"] is None:
         return None
-    delta = row["tax_delta_dollars"]
+    if has_tax_delta:
+        delta = row["tax_delta_dollars"]
+    else:
+        delta = _computed_tax_delta(_row_to_parcel(row), prepare_map_tax_context(conn))
     return {
         "type": "Feature",
         "geometry": {

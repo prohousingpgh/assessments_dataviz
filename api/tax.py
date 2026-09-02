@@ -306,11 +306,207 @@ def map_tax_delta_dollars(taxes: dict[str, Any]) -> float | None:
             growth = ESTIMATED_COMMERCIAL_GROWTH
     growth = max(COMMERCIAL_GROWTH_MIN, min(COMMERCIAL_GROWTH_MAX, float(growth)))
     bases = taxes.get("revenue_neutral_bases") or {}
-    if not bases.get("county") and not bases.get("municipality") and not bases.get("school"):
-        delta = taxes.get("delta", {}).get("total_dollars")
-        return float(delta) if delta is not None else None
+    if bases.get("county") or bases.get("municipality") or bases.get("school"):
+        future_total = _future_total_at_commercial_growth(taxes, growth)
+        return round(future_total - float(current_total), 2)
+    delta = taxes.get("delta", {}).get("total_dollars")
+    if delta is not None:
+        return float(delta)
+    # No published aggregates (CI / incomplete bundle): apply nominal mills
+    # to future taxable value, matching compute_property_taxes at factor 1.0.
     future_total = _future_total_at_commercial_growth(taxes, growth)
     return round(future_total - float(current_total), 2)
+
+
+class MapTaxContext:
+    """Shared millage, aggregates, and jurisdiction caches for map tax-delta batching."""
+
+    def __init__(self, conn: Any):
+        self.conn = conn
+        self.cfg = load_millage_config()
+        self.aggregates = load_tax_aggregates(conn)
+        self.summary = get_summary_stats(conn)
+        self.exclusion_current = float(
+            self.cfg.get("homestead_exclusion", DEFAULT_HOMESTEAD_EXCLUSION)
+        )
+        ratio = self.summary.get("county_value_ratio")
+        if ratio is not None:
+            self.county_value_ratio: float | None = float(ratio)
+            self.county_avg_residential_growth: float | None = self.county_value_ratio - 1.0
+        else:
+            self.county_value_ratio = None
+            avg_pct = self.summary.get("avg_value_change_pct")
+            self.county_avg_residential_growth = (
+                float(avg_pct) / 100.0 if avg_pct is not None else None
+            )
+        self._rn_cache: dict[tuple[str, str], dict[str, Any]] = {}
+
+    def revenue_neutral_bases(self, municipality: str | None, school_district: str | None) -> dict[str, Any]:
+        key = (municipality or "", school_district or "")
+        cached = self._rn_cache.get(key)
+        if cached is not None:
+            return cached
+        bases = build_revenue_neutral_bases(
+            self.aggregates,
+            municipality=municipality or None,
+            school_district=school_district or None,
+            db=self.conn,
+        )
+        self._rn_cache[key] = bases
+        return bases
+
+
+def prepare_map_tax_context(conn: Any) -> MapTaxContext:
+    return MapTaxContext(conn)
+
+
+def compute_map_tax_delta(parcel: dict[str, Any], ctx: MapTaxContext | None = None) -> float | None:
+    """
+    Map color value for one parcel.
+
+    Matches ``map_tax_delta_dollars(compute_property_taxes(parcel))`` without
+    building the full multi-scenario parcel-page payload.
+    """
+    if ctx is None:
+        ctx = MapTaxContext(_db_connection)
+
+    cfg = ctx.cfg
+    fmv_current = _to_float(parcel.get("current_assessment_total"))
+    fmv_future = _to_float(parcel.get("new_assessment_total"))
+    county_current = _to_float(parcel.get("county_total")) or fmv_current
+    local_current = _to_float(parcel.get("local_total")) or fmv_current
+    county_future = _scale_assessed(county_current, fmv_future, fmv_current)
+    local_future = _scale_assessed(local_current, fmv_future, fmv_current)
+
+    homestead_flag = parcel.get("homestead_flag")
+    has_homestead = (homestead_flag or "").strip().upper() == "HOM"
+    municipality = parcel.get("municipality")
+    school_district = parcel.get("school_district")
+
+    muni_mills, muni_key = _lookup_mills(
+        municipality,
+        cfg["municipality_mills"],
+        cfg.get("municipality_aliases", {}),
+    )
+    school_mills, school_key = _lookup_mills(
+        school_district,
+        cfg["school_mills"],
+        cfg.get("school_aliases", {}),
+    )
+    county_mills = float(cfg["county_mills"])
+    muni_split = _split_rate_entry(cfg, body="municipalities", key=muni_key)
+    school_split = _split_rate_entry(cfg, body="school_districts", key=school_key)
+
+    assessment_total_cur, land_cur, building_cur = _assessment_land_building(parcel, future=False)
+    assessment_total_fut, land_fut, building_fut = _assessment_land_building(parcel, future=True)
+
+    def _exclusion(body: TaxingBody, *, after: bool) -> float:
+        return homestead_exclusion_amount(
+            body,
+            school_district=school_district,
+            school_mills_key=school_key,
+            municipality_mills_key=muni_key,
+            after_reassessment=after,
+            county_residential_value_ratio=ctx.county_value_ratio,
+            default_exclusion=ctx.exclusion_current,
+        )
+
+    county_excl_cur = _exclusion("county", after=False)
+    county_excl_fut = _exclusion("county", after=True) if has_homestead else county_excl_cur
+    muni_excl_cur = _exclusion("municipality", after=False)
+    muni_excl_fut = _exclusion("municipality", after=True) if has_homestead else muni_excl_cur
+    school_excl_cur = _exclusion("school", after=False)
+    school_excl_fut = _exclusion("school", after=True) if has_homestead else school_excl_cur
+
+    county_taxable_cur = _homestead_taxable(county_current, homestead_flag, county_excl_cur)
+    county_taxable_fut = _homestead_taxable(county_future, homestead_flag, county_excl_fut)
+    local_taxable_cur_muni = _homestead_taxable(local_current, homestead_flag, muni_excl_cur)
+    local_taxable_fut_muni = _homestead_taxable(local_future, homestead_flag, muni_excl_fut)
+    local_taxable_cur_school = _homestead_taxable(local_current, homestead_flag, school_excl_cur)
+    local_taxable_fut_school = _homestead_taxable(local_future, homestead_flag, school_excl_fut)
+
+    if muni_split:
+        muni_land_cur, muni_building_cur = _apportion_local_land_building(
+            local_current, assessment_total_cur, land_cur, building_cur
+        )
+        muni_land_fut, muni_building_fut = _apportion_local_land_building(
+            local_future, assessment_total_fut, land_fut, building_fut
+        )
+        muni_land_cur, muni_building_cur = _homestead_land_first_taxable(
+            muni_land_cur, muni_building_cur, homestead_flag, muni_excl_cur
+        )
+        muni_land_fut, muni_building_fut = _homestead_land_first_taxable(
+            muni_land_fut, muni_building_fut, homestead_flag, muni_excl_fut
+        )
+        muni_cur = _split_rate_tax_amount(muni_land_cur, muni_building_cur, muni_split)
+        muni_taxable_cur = muni_land_cur + muni_building_cur
+        muni_taxable_fut = muni_land_fut + muni_building_fut
+        muni_mills_display = _blended_mills(muni_cur, muni_taxable_cur)
+    else:
+        muni_cur = _mill_tax(local_taxable_cur_muni, muni_mills)
+        muni_taxable_cur = local_taxable_cur_muni
+        muni_taxable_fut = local_taxable_fut_muni
+        muni_mills_display = muni_mills
+
+    if school_split:
+        school_land_cur, school_building_cur = _apportion_local_land_building(
+            local_current, assessment_total_cur, land_cur, building_cur
+        )
+        school_land_fut, school_building_fut = _apportion_local_land_building(
+            local_future, assessment_total_fut, land_fut, building_fut
+        )
+        school_land_cur, school_building_cur = _homestead_land_first_taxable(
+            school_land_cur, school_building_cur, homestead_flag, school_excl_cur
+        )
+        school_land_fut, school_building_fut = _homestead_land_first_taxable(
+            school_land_fut, school_building_fut, homestead_flag, school_excl_fut
+        )
+        school_cur = _split_rate_tax_amount(school_land_cur, school_building_cur, school_split)
+        school_taxable_cur = school_land_cur + school_building_cur
+        school_taxable_fut = school_land_fut + school_building_fut
+        school_mills_display = _blended_mills(school_cur, school_taxable_cur)
+    else:
+        school_cur = _mill_tax(local_taxable_cur_school, school_mills)
+        school_taxable_cur = local_taxable_cur_school
+        school_taxable_fut = local_taxable_fut_school
+        school_mills_display = school_mills
+
+    pittsburgh_additional = (
+        _pittsburgh_additional_entries(cfg)
+        if _is_city_of_pittsburgh(municipality, muni_key)
+        else []
+    )
+    additional_cur_total = 0.0
+    additional_current: list[dict[str, Any]] = []
+    if pittsburgh_additional:
+        additional_current, _, additional_cur_total, _ = _additional_tax_lines(
+            pittsburgh_additional,
+            local_taxable_cur_muni,
+            local_taxable_fut_muni,
+        )
+
+    county_cur = _mill_tax(county_taxable_cur, county_mills)
+    current_total = county_cur + muni_cur + school_cur + additional_cur_total
+
+    taxes = {
+        "current": {
+            "total": round(current_total, 2),
+            "county": {"mills": county_mills},
+            "municipality": {"mills": muni_mills_display},
+            "school": {"mills": school_mills_display},
+        },
+        "future": {
+            "county": {"taxable_value": county_taxable_fut},
+            "municipality": {"taxable_value": muni_taxable_fut},
+            "school": {"taxable_value": school_taxable_fut},
+        },
+        "county_avg_residential_growth_rate": ctx.county_avg_residential_growth,
+        "county_residential_value_ratio": ctx.county_value_ratio,
+        "revenue_neutral_bases": ctx.revenue_neutral_bases(municipality, school_district),
+    }
+    if additional_current:
+        taxes["current"]["additional"] = additional_current
+    return map_tax_delta_dollars(taxes)
 
 
 def _is_city_of_pittsburgh(municipality: str | None, muni_key: str | None) -> bool:

@@ -149,6 +149,7 @@ export type TaxMapConfig = {
   pmtiles_url: string | null
   source_layer: string
   parcel_count: number
+  tax_delta_precomputed?: boolean
 }
 
 export type TaxMapParcelFeature = {
