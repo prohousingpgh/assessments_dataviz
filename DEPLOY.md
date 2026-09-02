@@ -136,6 +136,7 @@ Add the DNS records `fly certs show` prints. HTTPS is automatic.
 | Docker build: `parcels.db missing` | `python scripts/verify_data.py` locally |
 | Fly OOM | `fly.toml` already requests 1GB RAM; scale up if needed |
 | 404 on `/home/123` | Rebuild image (SPA needs `StaticFiles(..., html=True)`) |
+| Tax change map unavailable | Live `data-*` bundles from before the tax map have centroids but no `tax_delta_dollars`. The API now computes point-map deltas on the fly. Rebuild or run `python scripts/attach_tax_delta.py` to precompute (enables the 3D hex surface). |
 
 ## Architecture
 

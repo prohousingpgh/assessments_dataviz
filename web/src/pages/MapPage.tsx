@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   getMapConfig,
@@ -174,14 +174,6 @@ export function MapPage() {
     [searchParams, setSearchParams]
   )
 
-  const allUnavailable = useMemo(() => {
-    const views = Object.values(viewCache)
-    if (views.length === 0) return false
-    return views.every(
-      (view) => view?.config && 'mode' in view.config && view.config.mode === 'unavailable'
-    )
-  }, [viewCache])
-
   if (!mapRenderingSupported) {
     return (
       <div className="page page--map">
@@ -202,7 +194,10 @@ export function MapPage() {
       ? viewCache.valuation.config
       : null
   const medianRatio = valuationConfig?.county_median_assessment_ratio
-  const hexCount = activeData.hexbins?.meta?.returned ?? activeData.hexbins?.features.length
+  const hexCount =
+    activeData.hexbins?.features.length && activeData.hexbins.features.length > 0
+      ? activeData.hexbins.features.length
+      : undefined
   const showViewSkeleton = activeData.loading && !activeData.config
 
   return (
@@ -233,17 +228,6 @@ export function MapPage() {
         </p>
       )}
 
-      {allUnavailable && (
-        <section className="map-rendering-unavailable">
-          <h2>Map data unavailable</h2>
-          <p>
-            Map locations are not in the current data bundle yet. Rebuild the database with WPRDC
-            parcel centroids, then optionally build vector tiles. See WPRDC parcel centroids for
-            coordinates.
-          </p>
-        </section>
-      )}
-
       {MAP_VIEW_OPTIONS.map((option) => {
         const isActive = option.value === activeView
         return (
@@ -254,6 +238,16 @@ export function MapPage() {
             hidden={!isActive}
           >
             {isActive && showViewSkeleton && <MapViewSkeleton />}
+            {isActive && activeData.config?.mode === 'unavailable' && (
+              <section className="map-rendering-unavailable">
+                <h2>Map data unavailable</h2>
+                <p>
+                  {activeView === 'tax'
+                    ? 'Estimated tax-change values are not available in the current data bundle.'
+                    : 'Map locations are not in the current data bundle yet. Rebuild the database with WPRDC parcel centroids, then optionally build vector tiles. See WPRDC parcel centroids for coordinates.'}
+                </p>
+              </section>
+            )}
             {isActive && activeData.config && activeData.config.mode !== 'unavailable' && (
               <MapViewSection
                 viewId={activeView}
